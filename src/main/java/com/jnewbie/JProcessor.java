@@ -13,7 +13,12 @@ public abstract class JProcessor implements Runnable {
     JHtml jHtml;
     String url;
     JPage jPage;
+    //使用哪种get
+    Integer getMethod = 1;
 
+    public static Integer GET = 1;
+    public static Integer JGET = 2;
+    public static Integer EGET = 3;
     Integer interval = 100;
 
     public static Logger log = Logger.getLogger(JProcessor.class);
@@ -38,6 +43,11 @@ public abstract class JProcessor implements Runnable {
         this.jHtml = jHtml;
         return this;
     }
+
+    public JProcessor setGetMethod(Integer getMethod) {
+        this.getMethod = getMethod;
+        return this;
+    }
     //页面信息处理
     public abstract JPage process(JPage jPage);
 
@@ -45,8 +55,19 @@ public abstract class JProcessor implements Runnable {
     @Override
     public void run() {
         //检查是否是起步
+        JPage jPage = null;
         if (this.jPage == null) {
-            JPage jPage = jHtml.get(url);
+            switch(this.getMethod){
+                case 1 :
+                    jPage = jHtml.get(url);
+                    break;
+                case 2 :
+                    jPage = jHtml.jGet(url);
+                    break;
+                case 3 :
+                    jPage = jHtml.eGet(url);
+                    break;
+            }
             this.jPage = process(jPage);
             for (int z = 0;z<T;z++){
                 Thread thread = new Thread(this);
@@ -66,13 +87,26 @@ public abstract class JProcessor implements Runnable {
                     i = true;
                 }
             }
-            try {
-                Thread.sleep(interval);
-            }catch (Exception e){
-                log.error("爬取间隔错误");
+            if(interval!=null) {
+                try {
+                    Thread.sleep(interval);
+                } catch (Exception e) {
+                    log.error("爬取间隔错误");
+                }
             }
                 if(i){
-                    JPage j = jHtml.get(url);
+                    JPage j = null;
+                    switch(this.getMethod){
+                        case 1 :
+                            j = jHtml.get(url);
+                            break;
+                        case 2 :
+                            j = jHtml.jGet(url);
+                            break;
+                        case 3 :
+                            j = jHtml.eGet(url);
+                            break;
+                    }
                     JPage process = process(j);
                     goRun(process);
                 }

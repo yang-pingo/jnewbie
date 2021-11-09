@@ -12,17 +12,17 @@ import java.util.List;
 
 /**
  * @program: jnewbie
- * @description: post参数
+ * @description: 参数
  * @author: pingc
  * @create: 2021-11-05 16:45
  **/
-public class Param {
+public class JParam {
 
 
     List<NameValuePair> nameValuePairs = new ArrayList<>();
 
 
-    public Param() {
+    public JParam() {
     }
 
     public void add(String name, String value){

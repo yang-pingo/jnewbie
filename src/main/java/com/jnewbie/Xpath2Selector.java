@@ -117,6 +117,7 @@ public class Xpath2Selector{
             }
             return result.toString();
         } catch (Exception e) {
+            System.out.println(e);
             log.error("select text error! " + xpathStr+ e);
         }
         return null;
@@ -153,6 +154,7 @@ public class Xpath2Selector{
                 results.add(result.toString());
             }
         } catch (Exception e) {
+            System.out.println(e);
             log.error("select text error! " + xpathStr+e);
         }
         return results;

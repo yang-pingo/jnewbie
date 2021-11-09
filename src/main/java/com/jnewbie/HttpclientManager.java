@@ -1,5 +1,6 @@
 package com.jnewbie;
 
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -7,6 +8,7 @@ import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
@@ -19,7 +21,7 @@ import java.security.NoSuchAlgorithmException;
  * @author: pingc
  * @create: 2021-11-05 11:41
  **/
-public class HttpConnectionManager {
+public class HttpclientManager {
 
     PoolingHttpClientConnectionManager cm = null;
     
@@ -32,24 +34,20 @@ public class HttpConnectionManager {
             e.printStackTrace();
         }
 
-        
         Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create()
                 .register("https", sslsf)
                 .register("http", new PlainConnectionSocketFactory())
                 .build();
         cm =new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-        cm.setMaxTotal(200);
-        cm.setDefaultMaxPerRoute(20);
+        cm.setMaxTotal(600);
+        cm.setDefaultMaxPerRoute(200);
     }
 
     public CloseableHttpClient getHttpClient() {
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(cm)
-                .build();          
-        
-        /*CloseableHttpClient httpClient = HttpClients.createDefault();
-        //如果不采用连接池就是这种方式获取连接
-        */
+                .setRetryHandler(new DefaultHttpRequestRetryHandler(2, false))
+                .build();
         return httpClient;
     }
 }

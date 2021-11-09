@@ -34,10 +34,11 @@ public class JContent {
         List<String> list = new ArrayList<>();
         if (xcontents != null) {
             for (String xcontent : xcontents) {
-                list.add(xpath2Selector.selectList(xcontent).get(0));
+
+                list.add(xpath2Selector.selectList(Jsoup.parseBodyFragment(xcontent).outerHtml()).get(0));
             }
         }else{
-            list = xpath2Selector.selectList(content);
+            list = xpath2Selector.selectList(Jsoup.parseBodyFragment(content).outerHtml());
         }
         xcontents = list;
         return this;

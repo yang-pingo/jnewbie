@@ -6,13 +6,14 @@ package com.jnewbie;
  * @author: pingc
  * @create: 2021-11-05 18:27
  **/
-public class Proxy {
+public class JProxy {
     public String host;
     public Integer port;
 
-    public Proxy (String host,Integer port){
+    public JProxy(String host, Integer port){
         this.host = host;
         this.port = port;
 
     }
+
 }
