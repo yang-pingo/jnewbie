@@ -9,6 +9,7 @@ import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
@@ -43,11 +44,10 @@ public class HttpclientManager {
         cm.setDefaultMaxPerRoute(200);
     }
 
-    public CloseableHttpClient getHttpClient() {
-        CloseableHttpClient httpClient = HttpClients.custom()
+    public HttpClientBuilder getHttpClient() {
+        HttpClientBuilder httpClient = HttpClients.custom()
                 .setConnectionManager(cm)
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(2, false))
-                .build();
+                .setRetryHandler(new DefaultHttpRequestRetryHandler(2, false));
         return httpClient;
     }
 }

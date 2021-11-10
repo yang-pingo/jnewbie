@@ -1,6 +1,7 @@
 package com.jnewbie;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @program: jnewbie
@@ -16,12 +17,8 @@ public abstract class JProcessor implements Runnable {
     //使用哪种get
     Integer getMethod = 1;
 
-    public static Integer GET = 1;
-    public static Integer JGET = 2;
-    public static Integer EGET = 3;
     Integer interval = 100;
-
-    public static Logger log = Logger.getLogger(JProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(JProcessor.class);
     public JProcessor(){}
 
     private final static MyBloomFilter myBloomFilter;
@@ -62,10 +59,13 @@ public abstract class JProcessor implements Runnable {
                     jPage = jHtml.get(url);
                     break;
                 case 2 :
-                    jPage = jHtml.jGet(url);
+                    jPage = jHtml.hGet(url);
                     break;
                 case 3 :
-                    jPage = jHtml.eGet(url);
+                    jPage = jHtml.pGet(url);
+                    break;
+                case 4 :
+                    jPage = jHtml.cGet(url);
                     break;
             }
             this.jPage = process(jPage);
@@ -101,10 +101,13 @@ public abstract class JProcessor implements Runnable {
                             j = jHtml.get(url);
                             break;
                         case 2 :
-                            j = jHtml.jGet(url);
+                            j = jHtml.hGet(url);
                             break;
                         case 3 :
-                            j = jHtml.eGet(url);
+                            j = jHtml.pGet(url);
+                            break;
+                        case 4 :
+                            j = jHtml.cGet(url);
                             break;
                     }
                     JPage process = process(j);

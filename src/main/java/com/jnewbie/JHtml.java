@@ -4,23 +4,38 @@ import com.gargoylesoftware.htmlunit.*;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.*;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Logger;
+
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -32,19 +47,18 @@ import java.util.logging.Level;
  * @create: 2021-11-05 15:48
  **/
 public class JHtml {
-
-    public static Logger log = Logger.getLogger(JHtml.class);
-
+    private static final Logger log = LoggerFactory.getLogger(JHtml.class);
     public static HttpclientManager httpclientManager = new HttpclientManager();
-    private  String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
-    private  String Accept_Charset = "utf-8";
-    private  String Accept_EnCoding = "gzip, deflate";
-    private  String Accept_Language = "zh,zh-CN";
+    public  String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
     private String cookie;
     private JHeader jHeader;
     private JParam JParam;
     private JProxy JProxy;
     private Integer jsTime;
+    public static Integer GET = 1;
+    public static Integer JGET = 2;
+    public static Integer PGET = 3;
+    public static Integer CGET = 4;
 
     static{
         LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log","org.apache.commons.logging.impl.NoOpLog");
@@ -77,7 +91,7 @@ public class JHtml {
     }
     //get请求页面
     public JPage get(String url) {
-        CloseableHttpClient httpclient = httpclientManager.getHttpClient();
+        HttpClientBuilder httpclient = httpclientManager.getHttpClient();
         CloseableHttpResponse response = null;
         String responseBody = null;
         JPage jPage = new JPage();
@@ -97,19 +111,25 @@ public class JHtml {
             //创建请求
             HttpGet httpget = new HttpGet(url);
             //超时
-            RequestConfig requestConfig = RequestConfig.custom()
+            RequestConfig.Builder builder = RequestConfig.custom()
                     .setConnectTimeout(5000).setConnectionRequestTimeout(1000)
-                    .setSocketTimeout(5000).build();
+                    .setSocketTimeout(5000);
             //如果没代理
             if(JProxy != null){
-                HttpHost httpHost = new HttpHost(JProxy.host, JProxy.port);
-                requestConfig.custom().setProxy(httpHost).build();
+                HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
+                builder.setProxy(proxyHost);
+
+                //包含账号密码的代理
+                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
+                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                    credsProvider.setCredentials(new AuthScope(JProxy.getHost(),JProxy.getPort()),
+                            new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
+                    httpclient.setDefaultCredentialsProvider(credsProvider);
+                }
             }
-            httpget.setConfig(requestConfig);
+            RequestConfig config = builder.build();
+            httpget.setConfig(config);
             //默认请求头
-            httpget.addHeader("Accept-Charset", Accept_Charset);
-            httpget.addHeader("Accept-Encoding", Accept_EnCoding);
-            httpget.addHeader("Accept-Language", Accept_Language);
             httpget.addHeader("User-Agent", User_Agent);
             if(jHeader!=null){
                 for (JHeader header : jHeader.getJHeaders()) {
@@ -120,7 +140,7 @@ public class JHtml {
                 httpget.addHeader("cookie", cookie);
             }
             //发起请求
-            response = httpclient.execute(httpget);
+            response = httpclient.build().execute(httpget);
             int status = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();
             String location = null;
@@ -157,7 +177,7 @@ public class JHtml {
 
     //post请求页面
     public  JPage post(String url) {
-        CloseableHttpClient httpclient = httpclientManager.getHttpClient();
+        HttpClientBuilder httpclient = httpclientManager.getHttpClient();
         CloseableHttpResponse response = null;
         String responseBody = null;
         JPage jPage = new JPage();
@@ -170,20 +190,26 @@ public class JHtml {
             }
 
             //超时
-            RequestConfig requestConfig = RequestConfig.custom()
+            RequestConfig.Builder builder = RequestConfig.custom()
                     .setConnectTimeout(5000).setConnectionRequestTimeout(1000)
-                    .setSocketTimeout(5000).build();
+                    .setSocketTimeout(5000);
             //如果没代理
             if(JProxy != null){
-                HttpHost httpHost = new HttpHost(JProxy.host, JProxy.port);
-                requestConfig.custom().setProxy(httpHost).build();
+                HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
+                builder.setProxy(proxyHost);
+
+                //包含账号密码的代理
+                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
+                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                    credsProvider.setCredentials(new AuthScope(JProxy.getHost(),JProxy.getPort()),
+                            new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
+                    httpclient.setDefaultCredentialsProvider(credsProvider);
+                }
             }
-            httppost.setConfig(requestConfig);
+            RequestConfig config = builder.build();
+            httppost.setConfig(config);
 
             //默认请求头
-            httppost.addHeader("Accept-Charset", Accept_Charset);
-            httppost.addHeader("Accept-Encoding", Accept_EnCoding);
-            httppost.addHeader("Accept-Language", Accept_Language);
             httppost.addHeader("User-Agent", User_Agent);
             if(jHeader!=null){
                 for (JHeader header : jHeader.getJHeaders()) {
@@ -194,7 +220,7 @@ public class JHtml {
                 httppost.addHeader("cookie", cookie);
             }
             //服务器返回数据处理
-            response = httpclient.execute(httppost);
+            response = httpclient.build().execute(httppost);
             int status = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();
             String location = null;
@@ -235,10 +261,8 @@ public class JHtml {
     }
 
     //使用HtmlUnit加载动态页面（复杂JS无法加载）
-    public JPage jGet(String url) {
-
+    public JPage hGet(String url) {
         JPage jPage = new JPage();
-
         try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
             //参数
             if (JParam != null) {
@@ -258,11 +282,13 @@ public class JHtml {
             if(JProxy !=null) {
                 request.setProxyHost(JProxy.host);
                 request.setProxyPort(JProxy.port);
+                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
+                    ((DefaultCredentialsProvider) webClient.getCredentialsProvider())
+                            .addCredentials(JProxy.getUsername(),JProxy.getPassword());
+                }
             }
+
             //请求头
-            request.setAdditionalHeader("Accept-Charset", Accept_Charset);
-            request.setAdditionalHeader("Accept-Encoding", Accept_EnCoding);
-            request.setAdditionalHeader("Accept-Language", Accept_Language);
             request.setAdditionalHeader("User-Agent", User_Agent);
             if(jHeader!=null){
                 for (JHeader header : jHeader.getJHeaders()) {
@@ -280,14 +306,15 @@ public class JHtml {
             webClient.getOptions().setJavaScriptEnabled(true);
             webClient.setAjaxController(new NicelyResynchronizingAjaxController());
 
-            final HtmlPage page = webClient.getPage(request);
+            final Page page = webClient.getPage(request);
 
             //等待背景js加载时间
             if(jsTime!=null){
                 webClient.waitForBackgroundJavaScript(jsTime);
             }
             //获取请求
-            final String pageAsXml = page.asXml();
+            String pageAsXml  = page.getWebResponse().getContentAsString();
+
             webClient.close();
             WebResponse webResponse = page.getWebResponse();
 
@@ -303,17 +330,18 @@ public class JHtml {
             jPage.setCode(statusCode);
             jPage.setContent(pageAsXml);
         } catch (Exception e) {
-            log.error(e);
+            log.error(e.toString());
             e.printStackTrace();
         }
         return jPage;
     }
-    public JPage eGet(String url) {
 
+
+
+    public JPage cGet(String url) {
         JPage jPage = new JPage();
-
         WebDriver driver = null;
-        HttpDriverManager.Worker worke = null;
+        ChromeDriverManager.Worker worke = null;
         //如果没参数
         if (JParam != null) {
             List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
@@ -329,15 +357,10 @@ public class JHtml {
         try {
             //如果没代理
             if(JProxy != null){
-                ChromeOptions options=new ChromeOptions();
-                options.addArguments("-headless");
-                String proxyServer = JProxy.host+":"+ JProxy.port;
-                Proxy proxy = new Proxy().setHttpProxy(proxyServer).setSslProxy(proxyServer);
-                options.setProxy(proxy);
-                options.addArguments("-headless");
-                driver = new ChromeDriver(options);
+                worke = ChromeDriverManager.getPool(JProxy);
+                driver = worke.getDriver();
             }else{
-                 worke = HttpDriverManager.getPool();
+                 worke = ChromeDriverManager.getPool();
                 driver = worke.getDriver();
             }
             driver.get(url);
@@ -351,7 +374,7 @@ public class JHtml {
             jPage.setContent(pageSource);
 
         } catch (Exception e) {
-            log.error(e);
+            log.error(e.toString());
         }finally {
             //放回连接池
             if(worke!=null){
@@ -363,5 +386,50 @@ public class JHtml {
         return jPage;
     }
 
+    public JPage pGet(String url) {
+        JPage jPage = new JPage();
+        WebDriver driver = null;
+        PhantomJSDriverManager.Worker worke = null;
+        //如果没参数
+        if (JParam != null) {
+            List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
+            NameValuePair remove = nameValuePairs.remove(0);
+            url += "?" + remove.getName() + "=" + remove.getValue();
+            for (NameValuePair nameValuePair : nameValuePairs) {
+                String name = nameValuePair.getName();
+                String value = nameValuePair.getValue();
+                url += "&" + name + "=" + value;
+            }
+        }
+        jPage.setUrl(url);
+        try {
+            //如果没代理
+            if(JProxy != null){
+                worke = PhantomJSDriverManager.getPool(JProxy);
+                driver = worke.getDriver();
+            }else{
+                worke = PhantomJSDriverManager.getPool();
+                driver = worke.getDriver();
+            }
+            driver.get(url);
 
+            //等待
+            if(jsTime!=null) {
+                driver.manage().timeouts().implicitlyWait(Duration.ofMillis(jsTime));
+            }
+            String pageSource = driver.getPageSource();
+            jPage.setContent(pageSource);
+
+        } catch (Exception e) {
+            log.error(e.toString());
+        }finally {
+            //放回连接池
+            if(worke!=null){
+                worke.shutdown();
+            }
+        }
+
+
+        return jPage;
+    }
 }

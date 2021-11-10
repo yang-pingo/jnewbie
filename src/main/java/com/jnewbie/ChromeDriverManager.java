@@ -1,32 +1,31 @@
 package com.jnewbie;
 
+import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-public class HttpDriverManager {
+public class ChromeDriverManager {
 
-    private static ConcurrentHashMap<Integer,Worker> pool ;//线程池
+    private static ConcurrentHashMap<String,Worker> pool ;//线程池
     private static int coreSize = 2;//核心线程池，一直驻留的资源
     private static int maxSize = 10;//设置最大数量资源，用于解决瞬时并发，瞬时并发过后要去识别空闲的释放掉，保留coreSize的资源
     private static int count = 0;//当前线程数
     private static int i = 0;  //运行数
     private static int statusSize = 0;//使用中的线程数
-    private static String driverPath;   //driver路径
-    private static String driverName;   //driver名称
+    private static String driverPath = "C:\\Users\\YRJ\\Desktop\\chromedriver_win32\\chromedriver.exe";   //driver路径
 
     public static void setDriverPath(String path){
         driverPath = path;
     }
-    public static void setDriverName(String name){
-        driverName = name;
-    }
+
     static {
         //禁用日志
-
         System.setProperty("webdriver.chrome.silentOutput", "true");
         java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
         //驱动初始化
@@ -41,7 +40,7 @@ public class HttpDriverManager {
             public void run() {
                 int c  = count;
                 if(statusSize<c/2 &&count>2){
-                    for (Map.Entry<Integer, Worker> entry : pool.entrySet()) {
+                    for (Map.Entry<String, Worker> entry : pool.entrySet()) {
                         Worker work = entry.getValue();
                         int i = 0;
                         if(work.status == 0 && i<c/3 &&count>=3){
@@ -55,15 +54,15 @@ public class HttpDriverManager {
             }
         }, 1000, 1000*60*10);// 设定指定的时间time,此处为2000毫秒
     }
-    private HttpDriverManager(){
+    private ChromeDriverManager(){
     }
 
     public static void init(int coreSize){//线程池数量初始化
-        HttpDriverManager.coreSize = coreSize;
+        ChromeDriverManager.coreSize = coreSize;
     }
 
     public static synchronized Worker getPool(){
-            if (count < coreSize ){//自增!!!
+            if (count < coreSize ){
                 count++;
                 return push(new Worker());
             }else{
@@ -72,12 +71,27 @@ public class HttpDriverManager {
 
     }
 
+    public static synchronized Worker getPool(JProxy jProxy){
+        if (count < coreSize ){
+            count++;
+            return push(new Worker(jProxy),jProxy);
+        }else{
+            return pop(jProxy);
+        }
+
+    }
 
 
     public static Worker push(Worker worker){
-        pool.put(++i,worker);
+        pool.put("" + ++i,worker);
         return worker;
     }
+    public static Worker push(Worker worker, JProxy jProxy){
+        pool.put(jProxy.getHost()+":"+jProxy.getPort()+ ":"+ ++i,worker);
+        return worker;
+    }
+
+
 
 
 
@@ -86,13 +100,13 @@ public class HttpDriverManager {
      * @return
      */
     public static Worker pop(){
-        for (Map.Entry<Integer,Worker> entry : pool.entrySet()) {
+        for (Map.Entry<String,Worker> entry : pool.entrySet()) {
             Worker work = entry.getValue();
-            if(work.status == 0){
+            if(work.status == 0 && !entry.getKey().contains(":")){
                 return work;
             }
         }
-        if (count < maxSize) {//自增!!!
+        if (count < maxSize) {
             count++;
             return push(new Worker());
         }else {
@@ -101,15 +115,40 @@ public class HttpDriverManager {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            for (Map.Entry<Integer,Worker> entry : pool.entrySet()) {
+            for (Map.Entry<String,Worker> entry : pool.entrySet()) {
                 Worker work = entry.getValue();
-                if(work.status == 0){
+                if(work.status == 0 && !entry.getKey().contains(":")){
                     return work;
                 }
             }
         }
         return null;
+    }
 
+    public static Worker pop(JProxy jProxy){
+        for (Map.Entry<String,Worker> entry : pool.entrySet()) {
+            Worker work = entry.getValue();
+            if(work.status == 0 && entry.getKey().contains(jProxy.getHost()+":"+jProxy.getPort())){
+                return work;
+            }
+        }
+        if (count < maxSize) {
+            count++;
+            return push(new Worker(jProxy));
+        }else {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            for (Map.Entry<String,Worker> entry : pool.entrySet()) {
+                Worker work = entry.getValue();
+                if(work.status == 0 && entry.getKey().contains(jProxy.getHost()+":"+jProxy.getPort())){
+                    return work;
+                }
+            }
+        }
+        return null;
     }
 
     public static class Worker{
@@ -126,6 +165,19 @@ public class HttpDriverManager {
             driver = new ChromeDriver(options);
             status = 0;
         }
+
+        public Worker(JProxy jProxy){
+            ChromeOptions options=new ChromeOptions();
+            options.addArguments("-headless");
+            Proxy proxy = new Proxy();
+            String proxyServer = jProxy.getHost()+":"+jProxy.getPort();
+            proxy.setHttpProxy(proxyServer).setSslProxy(proxyServer);
+            options.setProxy(proxy);
+            ChromeDriver driver = new ChromeDriver(options);
+            this.driver = driver;
+            status = 0;
+        }
+
 
 
         public void shutdown(){
