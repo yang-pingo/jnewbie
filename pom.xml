@@ -6,7 +6,7 @@
 
     <groupId>io.github.yang-pingo</groupId>
     <artifactId>jnewbie</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
     <name>jnewbie</name>
     <description>最最最简单的爬虫框架！</description>
     <url>https://github.com/yang-pingo/jnewbie</url>
