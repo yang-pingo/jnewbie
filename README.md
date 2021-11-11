@@ -1,3 +1,3 @@
 # jnewbie
 
-Simple crawler framework
+最简单的爬虫框架

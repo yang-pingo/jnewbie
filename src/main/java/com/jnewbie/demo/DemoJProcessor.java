@@ -15,7 +15,7 @@ import java.util.List;
 public class DemoJProcessor  extends JProcessor {
     @Override
     public JPage process(JPage jPage) {
-
+        System.out.println("process线程："+Thread.currentThread().getName());
         String url = jPage.getUrl();
         //判断url是不是搜索页面
         if(url.contains("s?q")){
@@ -37,12 +37,13 @@ public class DemoJProcessor  extends JProcessor {
 
         }
         else if(url.contains("book") && url.contains("html")){
+
             //获取章节标题
             String title = jPage.xpath("//span[@class=\"title\"]/text()").getAll().get(0);
             List<String> urls = jPage.xpath("//div[@id='chaptercontent']/text()").getAll();
             //打印小说正文
-            System.out.println(title);
-            System.out.println(urls);
+//            System.out.println(title);
+//            System.out.println(urls);
 
 
 

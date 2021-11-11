@@ -2,11 +2,12 @@ package com.jnewbie;
 
 import net.sf.saxon.lib.NamespaceConstant;
 import net.sf.saxon.xpath.XPathEvaluator;
-import org.apache.log4j.Logger;
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.DomSerializer;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -34,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Xpath2Selector{
     private String xpathStr;
     private XPathExpression xPathExpression;
-    public static Logger log = Logger.getLogger(Xpath2Selector.class);
+    private static final Logger log = LoggerFactory.getLogger(Xpath2Selector.class);
     //指定xpath表达式
     public Xpath2Selector(String xpathStr) {
         this.xpathStr = xpathStr;
