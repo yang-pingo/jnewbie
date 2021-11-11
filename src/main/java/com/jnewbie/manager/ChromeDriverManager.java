@@ -24,6 +24,15 @@ public class ChromeDriverManager {
     private static int statusSize = 0;//使用中的线程数
     private static String driverPath = "C:\\Users\\YRJ\\Desktop\\chromedriver_win32\\chromedriver.exe";   //driver路径
 
+    public static void close(){
+        for (Map.Entry<String, Worker> entry : pool.entrySet()) {
+            Worker work = entry.getValue();
+                pool.remove(entry.getKey());
+                work.close();
+            }
+        count = 0;
+        statusSize = 0;
+    }
     public static void setDriverPath(String path){
         driverPath = path;
         //驱动初始化

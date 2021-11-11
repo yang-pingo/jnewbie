@@ -22,7 +22,15 @@ public class HtmlUnitManager {
     private static int count = 0;//当前线程数
     private static int i = 0;  //运行数
     private static int statusSize = 0;//使用中的线程数
-
+    public static void close(){
+        for (Map.Entry<String, Worker> entry : pool.entrySet()) {
+            Worker work = entry.getValue();
+            pool.remove(entry.getKey());
+            work.close();
+        }
+        count = 0;
+        statusSize = 0;
+    }
 
     static {
         pool = new ConcurrentHashMap<>();

@@ -8,7 +8,7 @@
     <artifactId>jnewbie</artifactId>
     <version>1.5</version>
     <name>jnewbie</name>
-    <description>简单的爬虫框架！</description>
+    <description>最最最简单的爬虫框架！</description>
     <url>https://github.com/yang-pingo/jnewbie</url>
 
     <properties>
