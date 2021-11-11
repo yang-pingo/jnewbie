@@ -1,13 +1,11 @@
-package com.jnewbie;
+package com.jnewbie.manager;
 
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -18,7 +16,7 @@ import javax.net.ssl.SSLContext;
 import java.security.NoSuchAlgorithmException;
 /**
  * @program: jnewbie
- * @description: 连接池
+ * @description: Httpclient连接池
  * @author: pingc
  * @create: 2021-11-05 11:41
  **/

@@ -1,38 +1,30 @@
 package com.jnewbie;
 
 import com.gargoylesoftware.htmlunit.*;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.jnewbie.manager.ChromeDriverManager;
+import com.jnewbie.manager.HtmlUnitManager;
+import com.jnewbie.manager.HttpclientManager;
+import com.jnewbie.manager.PhantomJSDriverManager;
+import com.jnewbie.request.JHeader;
+import com.jnewbie.request.JPage;
+import com.jnewbie.request.JParam;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
-
-import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
-
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.Duration;
@@ -52,8 +44,8 @@ public class JHtml {
     public  String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
     private String cookie;
     private JHeader jHeader;
-    private JParam JParam;
-    private JProxy JProxy;
+    private com.jnewbie.request.JParam JParam;
+    private com.jnewbie.request.JProxy JProxy;
     private Integer jsTime;
     public static Integer GET = 1;
     public static Integer JGET = 2;
@@ -76,7 +68,7 @@ public class JHtml {
         this.JParam = JParam;
         return this;
     }
-    public JHtml setProxy (JProxy JProxy){
+    public JHtml setProxy (com.jnewbie.request.JProxy JProxy){
         this.JProxy = JProxy;
         return this;
     }
@@ -160,8 +152,13 @@ public class JHtml {
             jPage.setCode(status);
             //释放连接
             entity.getContent().close();
-        } catch (Exception e) {
-            log.error("获取html阶段错误："+e);
+
+        }catch (Exception e) {
+            if(e.toString().contains(JProxy.getHost())){
+                log.error("代理服务器连接失败："+e);
+            }else{
+                log.error("获取html阶段错误："+e);
+            }
 
         } finally {
             if (response != null) {
@@ -246,7 +243,11 @@ public class JHtml {
             entity.getContent().close();
 
         } catch (Exception e) {
-            log.error("获取html阶段错误："+e);
+            if(e.toString().contains(JProxy.getHost())){
+                log.error("代理服务器连接失败："+e);
+            }else{
+                log.error("获取html阶段错误："+e);
+            }
         } finally {
             if (response != null) {
                 try {
@@ -263,7 +264,10 @@ public class JHtml {
     //使用HtmlUnit加载动态页面（复杂JS无法加载）
     public JPage hGet(String url) {
         JPage jPage = new JPage();
-        try (final WebClient webClient = new WebClient(BrowserVersion.CHROME)) {
+        HtmlUnitManager.Worker worke = HtmlUnitManager.getPool();
+        try {
+
+            WebClient webClient = worke.getWebClient();
             //参数
             if (JParam != null) {
                 List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
@@ -285,6 +289,7 @@ public class JHtml {
                 if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
                     ((DefaultCredentialsProvider) webClient.getCredentialsProvider())
                             .addCredentials(JProxy.getUsername(),JProxy.getPassword());
+
                 }
             }
 
@@ -315,7 +320,6 @@ public class JHtml {
             //获取请求
             String pageAsXml  = page.getWebResponse().getContentAsString();
 
-            webClient.close();
             WebResponse webResponse = page.getWebResponse();
 
             int statusCode = webResponse.getStatusCode();
@@ -330,8 +334,16 @@ public class JHtml {
             jPage.setCode(statusCode);
             jPage.setContent(pageAsXml);
         } catch (Exception e) {
-            log.error(e.toString());
-            e.printStackTrace();
+            if(e.toString().contains(JProxy.getHost())){
+                log.error("代理服务器连接失败："+e);
+            }else{
+                log.error("获取html阶段错误："+e);
+            }
+        }finally {
+            //放回连接池
+            if(worke!=null){
+                worke.shutdown();
+            }
         }
         return jPage;
     }
@@ -374,7 +386,12 @@ public class JHtml {
             jPage.setContent(pageSource);
 
         } catch (Exception e) {
-            log.error(e.toString());
+            if(e.toString().contains("ERR_PROXY_CONNECTION_FAILED")){
+                log.error("代理服务器连接失败："+e);
+            }else{
+                log.error("获取html阶段错误："+e);
+
+            }
         }finally {
             //放回连接池
             if(worke!=null){
@@ -419,16 +436,26 @@ public class JHtml {
             }
             String pageSource = driver.getPageSource();
             jPage.setContent(pageSource);
+            if(jPage.getContent().equals("<html><head></head><body></body></html>")){
+                if(JProxy!=null){
+                    throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等\n当前有设置代理："+JProxy.getHost()+":"+JProxy.getPort());
+                }
+                throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等");
 
+            }
         } catch (Exception e) {
-            log.error(e.toString());
+            jPage.setContent("");
+            if(e.toString().contains("连接失败")){
+                log.error(e.toString());
+            }else{
+                log.error("获取html阶段错误："+e);
+            }
         }finally {
             //放回连接池
             if(worke!=null){
                 worke.shutdown();
             }
         }
-
 
         return jPage;
     }

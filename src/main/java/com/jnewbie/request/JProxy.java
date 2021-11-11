@@ -1,4 +1,4 @@
-package com.jnewbie;
+package com.jnewbie.request;
 
 import lombok.Data;
 

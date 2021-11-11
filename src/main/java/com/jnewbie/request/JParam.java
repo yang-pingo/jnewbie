@@ -1,11 +1,10 @@
-package com.jnewbie;
+package com.jnewbie.request;
 
 
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.message.BasicNameValuePair;
-
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +24,9 @@ public class JParam {
     public JParam() {
     }
 
-    public void add(String name, String value){
+    public JParam add(String name, String value){
         nameValuePairs.add(new BasicNameValuePair(name, value));
+        return this;
     }
     public UrlEncodedFormEntity getUrlEncodedFormEntity() throws UnsupportedEncodingException {
         return new UrlEncodedFormEntity(nameValuePairs);
