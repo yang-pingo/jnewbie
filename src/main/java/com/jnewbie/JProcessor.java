@@ -13,7 +13,7 @@ import java.util.List;
  * @create: 2021-11-06 10:31
  **/
 public abstract class JProcessor implements Runnable {
-    Integer T =0;
+    Integer T = 0;
     JHtml jHtml;
     List<String> urls = new ArrayList<>();
     String url;
@@ -49,6 +49,10 @@ public abstract class JProcessor implements Runnable {
         return this;
     }
 
+    public JHtml getJHtml() {
+        return this.jHtml;
+    }
+
     public JProcessor setGetMethod(Integer getMethod) {
         this.getMethod = getMethod;
         return this;
@@ -61,7 +65,7 @@ public abstract class JProcessor implements Runnable {
     public void run() {
         //检查是否是起步
         JPage jPage = null;
-        if (this.jPage == null && T!=0) {
+        if (this.jPage == null) {
             switch(this.getMethod){
                 case 1 :
                     jPage = jHtml.get(url);
@@ -81,11 +85,14 @@ public abstract class JProcessor implements Runnable {
                 jPage.addGoUrls(this.urls);
                 this.urls.clear();
             }
-
-            for (int z = 0;z<T;z++){
-                Thread thread = new Thread(this);
-                thread.start();
-            }
+                if(T != 0) {
+                    for (int z = 0; z < T; z++) {
+                        Thread thread = new Thread(this);
+                        thread.start();
+                    }
+                }else {
+                    goRun(this.jPage);
+                }
         }else{
             goRun(this.jPage);
         }
@@ -95,7 +102,7 @@ public abstract class JProcessor implements Runnable {
         for (String url : jPage.getGoUrl()) {
             try {
                 Boolean i = false;
-                synchronized (this) {
+                synchronized (myBloomFilter) {
                     if (!myBloomFilter.contain(url)) {
                         myBloomFilter.add(url);
                         i = true;
@@ -128,7 +135,8 @@ public abstract class JProcessor implements Runnable {
                     goRun(process);
                 }
             }catch (Exception e){
-                log.error(e.toString());
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("错误:"+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
             }
         }

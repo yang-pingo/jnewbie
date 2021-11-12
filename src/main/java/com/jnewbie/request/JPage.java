@@ -1,6 +1,5 @@
 package com.jnewbie.request;
 
-import com.jnewbie.JContent;
 import lombok.Data;
 import org.apache.http.Header;
 import org.jsoup.Jsoup;

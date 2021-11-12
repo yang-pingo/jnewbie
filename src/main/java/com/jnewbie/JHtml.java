@@ -8,7 +8,6 @@ import com.jnewbie.manager.PhantomJSDriverManager;
 import com.jnewbie.request.JHeader;
 import com.jnewbie.request.JPage;
 import com.jnewbie.request.JParam;
-import org.apache.commons.logging.LogFactory;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -26,10 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -46,14 +47,13 @@ public class JHtml {
     private JHeader jHeader;
     private com.jnewbie.request.JParam JParam;
     private com.jnewbie.request.JProxy JProxy;
-    private Integer jsTime;
+    private long jsTime;
     public static Integer GET = 1;
-    public static Integer JGET = 2;
+    public static Integer HGET = 2;
     public static Integer PGET = 3;
     public static Integer CGET = 4;
 
     static{
-        LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log","org.apache.commons.logging.impl.NoOpLog");
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF);
         java.util.logging.Logger.getLogger("org.apache.http.client").setLevel(Level.OFF);
     }
@@ -77,7 +77,7 @@ public class JHtml {
         return this;
     }
 
-    public JHtml setJsTime (Integer jsTime){
+    public JHtml setJsTime (long jsTime){
         this.jsTime = jsTime;
         return this;
     }
@@ -154,10 +154,13 @@ public class JHtml {
             entity.getContent().close();
 
         }catch (Exception e) {
-            if(e.toString().contains(JProxy.getHost())){
-                log.error("代理服务器连接失败："+e);
+            if(JProxy!=null) {
+                if (e.toString().contains(JProxy.getHost())) {
+                    log.error("代理服务器连接失败：" + e);
+                }
             }else{
-                log.error("获取html阶段错误："+e);
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
 
         } finally {
@@ -246,7 +249,8 @@ public class JHtml {
             if(e.toString().contains(JProxy.getHost())){
                 log.error("代理服务器连接失败："+e);
             }else{
-                log.error("获取html阶段错误："+e);
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
         } finally {
             if (response != null) {
@@ -310,11 +314,9 @@ public class JHtml {
             webClient.getOptions().setCssEnabled(false);
             webClient.getOptions().setJavaScriptEnabled(true);
             webClient.setAjaxController(new NicelyResynchronizingAjaxController());
-
-            final Page page = webClient.getPage(request);
-
+             Page page = webClient.getPage(request);
             //等待背景js加载时间
-            if(jsTime!=null){
+            if(jsTime!= 0){
                 webClient.waitForBackgroundJavaScript(jsTime);
             }
             //获取请求
@@ -330,14 +332,16 @@ public class JHtml {
             }
 
             jPage.setHeaders(list.toArray(new Header[]{}));
-            jPage.setContent(pageAsXml);
             jPage.setCode(statusCode);
             jPage.setContent(pageAsXml);
         } catch (Exception e) {
-            if(e.toString().contains(JProxy.getHost())){
-                log.error("代理服务器连接失败："+e);
+            if(JProxy!=null) {
+                if (e.toString().contains(JProxy.getHost())) {
+                    log.error("代理服务器连接失败：" + e);
+                }
             }else{
-                log.error("获取html阶段错误："+e);
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
         }finally {
             //放回连接池
@@ -378,7 +382,7 @@ public class JHtml {
             driver.get(url);
 
             //等待几秒
-            if(jsTime!=null){
+            if(jsTime!=0){
                 Thread.sleep(jsTime);
             }
 
@@ -389,7 +393,8 @@ public class JHtml {
             if(e.toString().contains("ERR_PROXY_CONNECTION_FAILED")){
                 log.error("代理服务器连接失败："+e);
             }else{
-                log.error("获取html阶段错误："+e);
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
 
             }
         }finally {
@@ -428,11 +433,11 @@ public class JHtml {
                 worke = PhantomJSDriverManager.getPool();
                 driver = worke.getDriver();
             }
-            driver.get(url);
+            driver.get(StringToUrl.to(url));
 
             //等待
-            if(jsTime!=null) {
-                driver.manage().timeouts().implicitlyWait(Duration.ofMillis(jsTime));
+            if(jsTime!=0) {
+                driver.manage().timeouts().implicitlyWait(jsTime, TimeUnit.MILLISECONDS);
             }
             String pageSource = driver.getPageSource();
             jPage.setContent(pageSource);
@@ -448,7 +453,8 @@ public class JHtml {
             if(e.toString().contains("连接失败")){
                 log.error(e.toString());
             }else{
-                log.error("获取html阶段错误："+e);
+                StackTraceElement stackTraceElement= e.getStackTrace()[0];
+                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
         }finally {
             //放回连接池

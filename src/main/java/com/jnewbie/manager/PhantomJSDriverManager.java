@@ -47,6 +47,7 @@ public class PhantomJSDriverManager {
     static {
         java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
         desiredCapabilities = new DesiredCapabilities();
+        System.setProperty("phantomjs.binary.path",driverPath);
         //ssl证书支持
         desiredCapabilities.setCapability("acceptSslCerts", true);
         //截屏支持，这里不需要
