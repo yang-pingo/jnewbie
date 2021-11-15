@@ -48,6 +48,10 @@ public class JHtml {
     private com.jnewbie.request.JParam JParam;
     private com.jnewbie.request.JProxy JProxy;
     private long jsTime;
+    private long timeOut= 5000;
+    private int retry = 3;
+    private long retryTime = 2000;
+
     public static Integer GET = 1;
     public static Integer HGET = 2;
     public static Integer PGET = 3;
@@ -81,13 +85,334 @@ public class JHtml {
         this.jsTime = jsTime;
         return this;
     }
+    public JHtml setTimeOut (long timeOut){
+        this.timeOut = timeOut;
+        return this;
+    }
+    public JHtml setRetry (int retry){
+        this.retry = retry;
+        return this;
+    }
+    public JHtml setRetryTime (long retryTime){
+        this.retryTime = retryTime;
+        return this;
+    }
     //get请求页面
     public JPage get(String url) {
-        HttpClientBuilder httpclient = httpclientManager.getHttpClient();
-        CloseableHttpResponse response = null;
-        String responseBody = null;
+        log.info("get : " + url);
+        int i = 0;
         JPage jPage = new JPage();
-        try {
+        while (i<retry) {
+            HttpClientBuilder httpclient = httpclientManager.getHttpClient();
+            CloseableHttpResponse response = null;
+            String responseBody = null;
+            try {
+                //如果没参数
+                if (JParam != null) {
+                    List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
+                    NameValuePair remove = nameValuePairs.remove(0);
+                    url += "?" + remove.getName() + "=" + remove.getValue();
+                    for (NameValuePair nameValuePair : nameValuePairs) {
+                        String name = nameValuePair.getName();
+                        String value = nameValuePair.getValue();
+                        url += "&" + name + "=" + value;
+                    }
+                }
+                jPage.setUrl(url);
+                //创建请求
+                HttpGet httpget = new HttpGet(url);
+                //超时
+                RequestConfig.Builder builder = RequestConfig.custom()
+                        .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
+                        .setSocketTimeout(5000);
+                //如果没代理
+                if (JProxy != null) {
+                    HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
+                    builder.setProxy(proxyHost);
+
+                    //包含账号密码的代理
+                    if (JProxy.getUsername() != null && JProxy.getPassword() != null) {
+                        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                        credsProvider.setCredentials(new AuthScope(JProxy.getHost(), JProxy.getPort()),
+                                new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
+                        httpclient.setDefaultCredentialsProvider(credsProvider);
+                    }
+                }
+                RequestConfig config = builder.build();
+                httpget.setConfig(config);
+                //默认请求头
+                httpget.addHeader("User-Agent", User_Agent);
+                if (jHeader != null) {
+                    for (JHeader header : jHeader.getJHeaders()) {
+                        httpget.addHeader(header.getName(), header.getValue());
+                    }
+                }
+                if (cookie != null) {
+                    httpget.addHeader("cookie", cookie);
+                }
+                //发起请求
+                response = httpclient.build().execute(httpget);
+                int status = response.getStatusLine().getStatusCode();
+                HttpEntity entity = response.getEntity();
+                String location = null;
+                if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
+                    responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
+                } else {
+                    // 从头中取出转向的地址
+                    Header locationHeader = httpget.getLastHeader("location");
+                    if (locationHeader != null) {
+                        location = locationHeader.getValue();
+                        responseBody = location;
+                    }
+                }
+                //给jpage添加
+                jPage.setHeaders(response.getAllHeaders());
+                jPage.setContent(responseBody);
+                jPage.setCode(status);
+                //释放连接
+                entity.getContent().close();
+                i=retry;
+            } catch (Exception e) {
+                if (JProxy != null) {
+                    if (e.toString().contains(JProxy.getHost())) {
+                        log.error("代理服务器连接失败：" + e);
+                    }
+                } else {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                }
+                i++;
+                try {
+                    Thread.sleep(retryTime);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
+                log.error(url+"开始重试："+i);
+            } finally {
+                if (response != null) {
+                    try {
+                        response.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return jPage;
+    }
+
+    //post请求页面
+    public  JPage post(String url) {
+        log.info("post:"+url);
+        int i = 0;
+        JPage jPage = new JPage();
+        while (i<retry) {
+            HttpClientBuilder httpclient = httpclientManager.getHttpClient();
+            CloseableHttpResponse response = null;
+            String responseBody = null;
+            jPage.setUrl(url);
+            try {
+                HttpPost httppost = new HttpPost(url);
+                // 如果没参数
+                if (JParam != null) {
+                    httppost.setEntity(JParam.getUrlEncodedFormEntity());
+                }
+
+                //超时
+                RequestConfig.Builder builder = RequestConfig.custom()
+                        .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
+                        .setSocketTimeout(5000);
+                //如果没代理
+                if (JProxy != null) {
+                    HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
+                    builder.setProxy(proxyHost);
+
+                    //包含账号密码的代理
+                    if (JProxy.getUsername() != null && JProxy.getPassword() != null) {
+                        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                        credsProvider.setCredentials(new AuthScope(JProxy.getHost(), JProxy.getPort()),
+                                new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
+                        httpclient.setDefaultCredentialsProvider(credsProvider);
+                    }
+                }
+                RequestConfig config = builder.build();
+                httppost.setConfig(config);
+
+                //默认请求头
+                httppost.addHeader("User-Agent", User_Agent);
+                if (jHeader != null) {
+                    for (JHeader header : jHeader.getJHeaders()) {
+                        httppost.addHeader(header.getName(), header.getValue());
+                    }
+                }
+                if (cookie != null) {
+                    httppost.addHeader("cookie", cookie);
+                }
+                //服务器返回数据处理
+                response = httpclient.build().execute(httppost);
+                int status = response.getStatusLine().getStatusCode();
+                HttpEntity entity = response.getEntity();
+                String location = null;
+                if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
+                    responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
+                } else {
+                    // 从头中取出转向的地址
+                    Header locationHeader = httppost.getLastHeader("location");
+                    if (locationHeader != null) {
+                        location = locationHeader.getValue();
+                        responseBody = location;
+                    } else {
+                        responseBody = "";
+                    }
+                }
+
+                //给jpage添加
+                jPage.setHeaders(response.getAllHeaders());
+                jPage.setContent(responseBody);
+                jPage.setCode(status);
+                jPage.setRedUrl(location);
+                //释放连接
+                entity.getContent().close();
+                i=retry;
+            } catch (Exception e) {
+                if (e.toString().contains(JProxy.getHost())) {
+                    log.error("代理服务器连接失败：" + e);
+                } else {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                }
+                i++;
+                try {
+                    Thread.sleep(retryTime);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
+                log.error(url+"开始重试："+i);
+            } finally {
+                if (response != null) {
+                    try {
+                        response.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return jPage;
+
+
+    }
+
+    //使用HtmlUnit加载动态页面（复杂JS无法加载）
+    public JPage hGet(String url) {
+        log.info("hGet : " + url);
+        int i = 0;
+        JPage jPage = new JPage();
+        while (i<retry) {
+            HtmlUnitManager.Worker worke = HtmlUnitManager.getPool();
+            try {
+                WebClient webClient = worke.getWebClient();
+                //参数
+                if (JParam != null) {
+                    List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
+                    NameValuePair remove = nameValuePairs.remove(0);
+                    url += "?" + remove.getName() + "=" + remove.getValue();
+                    for (NameValuePair nameValuePair : nameValuePairs) {
+                        String name = nameValuePair.getName();
+                        String value = nameValuePair.getValue();
+                        url += "&" + name + "=" + value;
+                    }
+                }
+
+                jPage.setUrl(url);
+                WebRequest request = new WebRequest(new URL(url));
+                request.setCharset(Charset.defaultCharset());
+                if (JProxy != null) {
+                    request.setProxyHost(JProxy.host);
+                    request.setProxyPort(JProxy.port);
+                    if (JProxy.getUsername() != null && JProxy.getPassword() != null) {
+                        ((DefaultCredentialsProvider) webClient.getCredentialsProvider())
+                                .addCredentials(JProxy.getUsername(), JProxy.getPassword());
+
+                    }
+                }
+
+                //请求头
+                request.setAdditionalHeader("User-Agent", User_Agent);
+                if (jHeader != null) {
+                    for (JHeader header : jHeader.getJHeaders()) {
+                        request.setAdditionalHeader(header.getName(), header.getValue());
+                    }
+                }
+                if (cookie != null) {
+                    request.setAdditionalHeader("cookie", cookie);
+                }
+                //启用js，禁用css等
+                webClient.getOptions().setThrowExceptionOnScriptError(false);
+                webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+                webClient.getOptions().setActiveXNative(false);
+                webClient.getOptions().setCssEnabled(false);
+                webClient.getOptions().setJavaScriptEnabled(true);
+                webClient.setAjaxController(new NicelyResynchronizingAjaxController());
+                webClient.getOptions().setTimeout((int) timeOut);
+                Page page = webClient.getPage(request);
+                //等待背景js加载时间
+                if (jsTime != 0) {
+                    webClient.waitForBackgroundJavaScript(jsTime);
+                }
+
+                //获取请求
+                String pageAsXml = page.getWebResponse().getContentAsString();
+
+                WebResponse webResponse = page.getWebResponse();
+
+                int statusCode = webResponse.getStatusCode();
+
+                ArrayList<Header> list = new ArrayList<>();
+                for (com.gargoylesoftware.htmlunit.util.NameValuePair responseHeader : page.getWebResponse().getResponseHeaders()) {
+                    list.add(new BasicHeader(responseHeader.getName(), responseHeader.getValue()));
+                }
+
+                jPage.setHeaders(list.toArray(new Header[]{}));
+                jPage.setCode(statusCode);
+                jPage.setContent(pageAsXml);
+                i = retry;
+            } catch (Exception e) {
+                if (JProxy != null) {
+                    if (e.toString().contains(JProxy.getHost())) {
+                        log.error("代理服务器连接失败：" + e);
+                    }
+                } else {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                }
+                i++;
+                try {
+                    Thread.sleep(retryTime);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
+                log.error(url+"开始重试："+i);
+            } finally {
+                //放回连接池
+                if (worke != null) {
+                    worke.shutdown();
+                }
+            }
+        }
+
+        return jPage;
+    }
+
+
+
+    public JPage cGet(String url) {
+        log.info("cGet : " + url);
+        int i = 0;
+        JPage jPage = new JPage();
+        while (i<retry) {
+            WebDriver driver = null;
+            ChromeDriverManager.Worker worke = null;
             //如果没参数
             if (JParam != null) {
                 List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
@@ -100,179 +425,62 @@ public class JHtml {
                 }
             }
             jPage.setUrl(url);
-            //创建请求
-            HttpGet httpget = new HttpGet(url);
-            //超时
-            RequestConfig.Builder builder = RequestConfig.custom()
-                    .setConnectTimeout(5000).setConnectionRequestTimeout(1000)
-                    .setSocketTimeout(5000);
-            //如果没代理
-            if(JProxy != null){
-                HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
-                builder.setProxy(proxyHost);
-
-                //包含账号密码的代理
-                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
-                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
-                    credsProvider.setCredentials(new AuthScope(JProxy.getHost(),JProxy.getPort()),
-                            new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
-                    httpclient.setDefaultCredentialsProvider(credsProvider);
+            try {
+                //如果没代理
+                if (JProxy != null) {
+                    worke = ChromeDriverManager.getPool(JProxy);
+                    driver = worke.getDriver();
+                } else {
+                    worke = ChromeDriverManager.getPool();
+                    driver = worke.getDriver();
                 }
-            }
-            RequestConfig config = builder.build();
-            httpget.setConfig(config);
-            //默认请求头
-            httpget.addHeader("User-Agent", User_Agent);
-            if(jHeader!=null){
-                for (JHeader header : jHeader.getJHeaders()) {
-                    httpget.addHeader(header.getName(),header.getValue());
+                driver.manage().timeouts().pageLoadTimeout(timeOut, TimeUnit.MILLISECONDS);
+                driver.get(url);
+
+                //等待几秒
+                if (jsTime != 0) {
+                    Thread.sleep(jsTime);
                 }
-            }
-            if(cookie!=null){
-                httpget.addHeader("cookie", cookie);
-            }
-            //发起请求
-            response = httpclient.build().execute(httpget);
-            int status = response.getStatusLine().getStatusCode();
-            HttpEntity entity = response.getEntity();
-            String location = null;
-            if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
-            } else {
-                // 从头中取出转向的地址
-                Header locationHeader = httpget.getLastHeader("location");
-            if (locationHeader != null) {
-                location = locationHeader.getValue();
-                responseBody = location;
 
-            }}
-            //给jpage添加
-            jPage.setHeaders(response.getAllHeaders());
-            jPage.setContent(responseBody);
-            jPage.setCode(status);
-            //释放连接
-            entity.getContent().close();
-
-        }catch (Exception e) {
-            if(JProxy!=null) {
-                if (e.toString().contains(JProxy.getHost())) {
+                String pageSource = driver.getPageSource();
+                jPage.setContent(pageSource);
+                i=retry;
+            } catch (Exception e) {
+                if (e.toString().contains("ERR_PROXY_CONNECTION_FAILED")) {
                     log.error("代理服务器连接失败：" + e);
-                }
-            }else{
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
-            }
+                } else {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
 
-        } finally {
-            if (response != null) {
+                }
+                i++;
                 try {
-                    response.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    Thread.sleep(retryTime);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
+                log.error(url+"开始重试："+i);
+            } finally {
+                //放回连接池
+                if (worke != null) {
+                    worke.shutdown();
                 }
             }
         }
+
+
         return jPage;
     }
 
-    //post请求页面
-    public  JPage post(String url) {
-        HttpClientBuilder httpclient = httpclientManager.getHttpClient();
-        CloseableHttpResponse response = null;
-        String responseBody = null;
+    public JPage pGet(String url) {
+        log.info("pGet : " + url);
+
+        int i = 0;
         JPage jPage = new JPage();
-        jPage.setUrl(url);
-        try {
-            HttpPost httppost = new HttpPost(url);
-            // 如果没参数
-            if (JParam != null) {
-                httppost.setEntity(JParam.getUrlEncodedFormEntity());
-            }
-
-            //超时
-            RequestConfig.Builder builder = RequestConfig.custom()
-                    .setConnectTimeout(5000).setConnectionRequestTimeout(1000)
-                    .setSocketTimeout(5000);
-            //如果没代理
-            if(JProxy != null){
-                HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
-                builder.setProxy(proxyHost);
-
-                //包含账号密码的代理
-                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
-                    CredentialsProvider credsProvider = new BasicCredentialsProvider();
-                    credsProvider.setCredentials(new AuthScope(JProxy.getHost(),JProxy.getPort()),
-                            new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
-                    httpclient.setDefaultCredentialsProvider(credsProvider);
-                }
-            }
-            RequestConfig config = builder.build();
-            httppost.setConfig(config);
-
-            //默认请求头
-            httppost.addHeader("User-Agent", User_Agent);
-            if(jHeader!=null){
-                for (JHeader header : jHeader.getJHeaders()) {
-                    httppost.addHeader(header.getName(),header.getValue());
-                }
-            }
-            if(cookie!=null){
-                httppost.addHeader("cookie", cookie);
-            }
-            //服务器返回数据处理
-            response = httpclient.build().execute(httppost);
-            int status = response.getStatusLine().getStatusCode();
-            HttpEntity entity = response.getEntity();
-            String location = null;
-            if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
-            } else  {
-                // 从头中取出转向的地址
-                Header locationHeader = httppost.getLastHeader("location");
-                if (locationHeader != null) {
-                    location = locationHeader.getValue();
-                    responseBody = location;
-                } else {
-                    responseBody = "";
-                }
-            }
-
-            //给jpage添加
-            jPage.setHeaders(response.getAllHeaders());
-            jPage.setContent(responseBody);
-            jPage.setCode(status);
-            jPage.setRedUrl(location);
-            //释放连接
-            entity.getContent().close();
-
-        } catch (Exception e) {
-            if(e.toString().contains(JProxy.getHost())){
-                log.error("代理服务器连接失败："+e);
-            }else{
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
-            }
-        } finally {
-            if (response != null) {
-                try {
-                    response.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return jPage;
-
-        }
-    }
-
-    //使用HtmlUnit加载动态页面（复杂JS无法加载）
-    public JPage hGet(String url) {
-        JPage jPage = new JPage();
-        HtmlUnitManager.Worker worke = HtmlUnitManager.getPool();
-        try {
-
-            WebClient webClient = worke.getWebClient();
-            //参数
+        while (i<retry) {
+            WebDriver driver = null;
+            PhantomJSDriverManager.Worker worke = null;
+            //如果没参数
             if (JParam != null) {
                 List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
                 NameValuePair remove = nameValuePairs.remove(0);
@@ -283,183 +491,52 @@ public class JHtml {
                     url += "&" + name + "=" + value;
                 }
             }
-
             jPage.setUrl(url);
-            WebRequest request=new WebRequest(new URL(url));
-            request.setCharset(Charset.defaultCharset());
-            if(JProxy !=null) {
-                request.setProxyHost(JProxy.host);
-                request.setProxyPort(JProxy.port);
-                if(JProxy.getUsername()!=null &&JProxy.getPassword()!=null) {
-                    ((DefaultCredentialsProvider) webClient.getCredentialsProvider())
-                            .addCredentials(JProxy.getUsername(),JProxy.getPassword());
+            try {
+                //如果没代理
+                if (JProxy != null) {
+                    worke = PhantomJSDriverManager.getPool(JProxy);
+                    driver = worke.getDriver();
+                } else {
+                    worke = PhantomJSDriverManager.getPool();
+                    driver = worke.getDriver();
+                }
+                driver.manage().timeouts().pageLoadTimeout(timeOut, TimeUnit.MILLISECONDS);
+                driver.get(StringToUrl.to(url));
+                //等待
+                if (jsTime != 0) {
+                    driver.manage().timeouts().implicitlyWait(jsTime, TimeUnit.MILLISECONDS);
+                }
+                String pageSource = driver.getPageSource();
+                jPage.setContent(pageSource);
+                if (jPage.getContent().equals("<html><head></head><body></body></html>")) {
+                    if (JProxy != null) {
+                        throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等\n当前有设置代理：" + JProxy.getHost() + ":" + JProxy.getPort());
+                    }
+                    throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等");
 
                 }
-            }
-
-            //请求头
-            request.setAdditionalHeader("User-Agent", User_Agent);
-            if(jHeader!=null){
-                for (JHeader header : jHeader.getJHeaders()) {
-                    request.setAdditionalHeader(header.getName(),header.getValue());
+                i=retry;
+            } catch (Exception e) {
+                jPage.setContent("");
+                if (e.toString().contains("连接失败")) {
+                    log.error(e.toString());
+                } else {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                 }
-            }
-            if(cookie!=null){
-                request.setAdditionalHeader("cookie", cookie);
-            }
-            //启用js，禁用css等
-            webClient.getOptions().setThrowExceptionOnScriptError(false);
-            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-            webClient.getOptions().setActiveXNative(false);
-            webClient.getOptions().setCssEnabled(false);
-            webClient.getOptions().setJavaScriptEnabled(true);
-            webClient.setAjaxController(new NicelyResynchronizingAjaxController());
-             Page page = webClient.getPage(request);
-            //等待背景js加载时间
-            if(jsTime!= 0){
-                webClient.waitForBackgroundJavaScript(jsTime);
-            }
-            //获取请求
-            String pageAsXml  = page.getWebResponse().getContentAsString();
-
-            WebResponse webResponse = page.getWebResponse();
-
-            int statusCode = webResponse.getStatusCode();
-
-            ArrayList<Header> list = new ArrayList<>();
-            for (com.gargoylesoftware.htmlunit.util.NameValuePair responseHeader : page.getWebResponse().getResponseHeaders()) {
-                list.add(new BasicHeader(responseHeader.getName(),responseHeader.getValue()));
-            }
-
-            jPage.setHeaders(list.toArray(new Header[]{}));
-            jPage.setCode(statusCode);
-            jPage.setContent(pageAsXml);
-        } catch (Exception e) {
-            if(JProxy!=null) {
-                if (e.toString().contains(JProxy.getHost())) {
-                    log.error("代理服务器连接失败：" + e);
+                i++;
+                try {
+                    Thread.sleep(retryTime);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
                 }
-            }else{
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
-            }
-        }finally {
-            //放回连接池
-            if(worke!=null){
-                worke.shutdown();
-            }
-        }
-        return jPage;
-    }
-
-
-
-    public JPage cGet(String url) {
-        JPage jPage = new JPage();
-        WebDriver driver = null;
-        ChromeDriverManager.Worker worke = null;
-        //如果没参数
-        if (JParam != null) {
-            List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
-            NameValuePair remove = nameValuePairs.remove(0);
-            url += "?" + remove.getName() + "=" + remove.getValue();
-            for (NameValuePair nameValuePair : nameValuePairs) {
-                String name = nameValuePair.getName();
-                String value = nameValuePair.getValue();
-                url += "&" + name + "=" + value;
-            }
-        }
-        jPage.setUrl(url);
-        try {
-            //如果没代理
-            if(JProxy != null){
-                worke = ChromeDriverManager.getPool(JProxy);
-                driver = worke.getDriver();
-            }else{
-                 worke = ChromeDriverManager.getPool();
-                driver = worke.getDriver();
-            }
-            driver.get(url);
-
-            //等待几秒
-            if(jsTime!=0){
-                Thread.sleep(jsTime);
-            }
-
-            String pageSource = driver.getPageSource();
-            jPage.setContent(pageSource);
-
-        } catch (Exception e) {
-            if(e.toString().contains("ERR_PROXY_CONNECTION_FAILED")){
-                log.error("代理服务器连接失败："+e);
-            }else{
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
-
-            }
-        }finally {
-            //放回连接池
-            if(worke!=null){
-                worke.shutdown();
-            }
-        }
-
-
-        return jPage;
-    }
-
-    public JPage pGet(String url) {
-        JPage jPage = new JPage();
-        WebDriver driver = null;
-        PhantomJSDriverManager.Worker worke = null;
-        //如果没参数
-        if (JParam != null) {
-            List<NameValuePair> nameValuePairs = JParam.getNameValuePairs();
-            NameValuePair remove = nameValuePairs.remove(0);
-            url += "?" + remove.getName() + "=" + remove.getValue();
-            for (NameValuePair nameValuePair : nameValuePairs) {
-                String name = nameValuePair.getName();
-                String value = nameValuePair.getValue();
-                url += "&" + name + "=" + value;
-            }
-        }
-        jPage.setUrl(url);
-        try {
-            //如果没代理
-            if(JProxy != null){
-                worke = PhantomJSDriverManager.getPool(JProxy);
-                driver = worke.getDriver();
-            }else{
-                worke = PhantomJSDriverManager.getPool();
-                driver = worke.getDriver();
-            }
-            driver.get(StringToUrl.to(url));
-
-            //等待
-            if(jsTime!=0) {
-                driver.manage().timeouts().implicitlyWait(jsTime, TimeUnit.MILLISECONDS);
-            }
-            String pageSource = driver.getPageSource();
-            jPage.setContent(pageSource);
-            if(jPage.getContent().equals("<html><head></head><body></body></html>")){
-                if(JProxy!=null){
-                    throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等\n当前有设置代理："+JProxy.getHost()+":"+JProxy.getPort());
+                log.error(url+"开始重试："+i);
+            } finally {
+                //放回连接池
+                if (worke != null) {
+                    worke.shutdown();
                 }
-                throw new Exception("连接失败,可导致错误的因素有很多：网络错误，代理连接失败，网站连接失败等");
-
-            }
-        } catch (Exception e) {
-            jPage.setContent("");
-            if(e.toString().contains("连接失败")){
-                log.error(e.toString());
-            }else{
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("获取html阶段错误："+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
-            }
-        }finally {
-            //放回连接池
-            if(worke!=null){
-                worke.shutdown();
             }
         }
 

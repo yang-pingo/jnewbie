@@ -1,10 +1,18 @@
 package com.jnewbie;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 import com.jnewbie.request.JPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * @program: jnewbie
@@ -13,6 +21,7 @@ import java.util.List;
  * @create: 2021-11-06 10:31
  **/
 public abstract class JProcessor implements Runnable {
+    public static final ExecutorService executorService = Executors.newCachedThreadPool();
     Integer T = 0;
     JHtml jHtml;
     List<String> urls = new ArrayList<>();
@@ -20,15 +29,17 @@ public abstract class JProcessor implements Runnable {
     JPage jPage;
     //使用哪种get
     Integer getMethod = 1;
-
     Integer interval = 100;
+    boolean filter = true;
     private static final Logger log = LoggerFactory.getLogger(JProcessor.class);
     public JProcessor(){}
 
-    private final static MyBloomFilter myBloomFilter;
-    static {myBloomFilter = new MyBloomFilter(); }
 
+    private  static BloomFilter<String> Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), 10000000,0.001);
 
+    public static void setBloomfilter(Integer size,float erro) {
+        Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), size,erro);
+    }
 
     public JProcessor addUrl(String url) {
         this.urls.add(url);
@@ -38,7 +49,10 @@ public abstract class JProcessor implements Runnable {
         this.url=url;
         return this;
     }
-
+    public JProcessor setFilter(Boolean filter) {
+        this.filter=filter;
+        return this;
+    }
     public JProcessor setInterval(Integer interval) {
         this.interval = interval;
         return this;
@@ -66,30 +80,41 @@ public abstract class JProcessor implements Runnable {
         //检查是否是起步
         JPage jPage = null;
         if (this.jPage == null) {
-            switch(this.getMethod){
-                case 1 :
+            switch (this.getMethod) {
+                case 1:
                     jPage = jHtml.get(url);
                     break;
-                case 2 :
+                case 2:
                     jPage = jHtml.hGet(url);
                     break;
-                case 3 :
+                case 3:
                     jPage = jHtml.pGet(url);
                     break;
-                case 4 :
+                case 4:
                     jPage = jHtml.cGet(url);
                     break;
             }
             this.jPage = process(jPage);
-            if(this.urls.size()!=0){
+            if (this.urls.size() != 0) {
                 jPage.addGoUrls(this.urls);
                 this.urls.clear();
             }
-                if(T != 0) {
-                    for (int z = 0; z < T; z++) {
-                        Thread thread = new Thread(this);
-                        thread.start();
+            if (T != 0) {
+                List<Future<?>> list = new ArrayList<>();
+                for (int z = 0; z < T; z++) {
+                    Future<?> submit = executorService.submit(this);
+                    list.add(submit);
+                }
+                for (Future<?> future : list) {
+                    try {
+                        future.get();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
+                }
+
+
+
                 }else {
                     goRun(this.jPage);
                 }
@@ -102,10 +127,12 @@ public abstract class JProcessor implements Runnable {
         for (String url : jPage.getGoUrl()) {
             try {
                 Boolean i = false;
-                synchronized (myBloomFilter) {
-                    if (!myBloomFilter.contain(url)) {
-                        myBloomFilter.add(url);
-                        i = true;
+                if(filter) {
+                    synchronized (Bloomfilter) {
+                        if (!Bloomfilter.mightContain(url)) {
+                            Bloomfilter.put(url);
+                            i = true;
+                        }
                     }
                 }
                 if (interval != null) {
@@ -139,6 +166,7 @@ public abstract class JProcessor implements Runnable {
                 log.error("错误:"+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
             }
             }
+        //线程结束时，将计时器减一
         }
 
 

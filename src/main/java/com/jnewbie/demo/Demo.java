@@ -1,7 +1,9 @@
 package com.jnewbie.demo;
 
 import com.jnewbie.JHtml;
+import com.jnewbie.request.JPage;
 
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @program: jnewbie
@@ -13,13 +15,14 @@ public class Demo {
     public static void main(String[] args) {
             //创建请求客户端
             JHtml jHtml = new JHtml();
-            //创建数据处理器
+        //创建数据处理器
             DemoJProcessor demoJProcessor = new DemoJProcessor();
-
+//        JPage jPage = jHtml.get("https://www.biquge7.com/s?q=123");
+//        System.out.println(jPage);
 //        将客户端加入到处理器,设置开始url,设置启动线程
             demoJProcessor.setJHtml(jHtml)
-                    .setGetMethod(JHtml.HGET)
-                    .setUrl("https://www.biquge7.com/s?q=火影忍者")
+                    .setGetMethod(JHtml.GET)
+                    .setUrl("https://www.biquge7.com/s?q=（风云同人）妖女婠婠")
                     .start(5);
     }
 }
