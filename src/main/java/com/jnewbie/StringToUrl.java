@@ -29,6 +29,7 @@ public class StringToUrl {
                 .replace("%3F","?")
                 .replace("%5B","[")
                 .replace("%5D","]")
+               .replace("%27","'")
                 .replace("%EF%BC%81","！")
                .replace("%3A",":")
                 .replace("%EF%BC%9A","：")

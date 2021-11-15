@@ -7,6 +7,7 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Timer;
@@ -45,7 +46,11 @@ public class PhantomJSDriverManager {
     }
 
     static {
-        java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger(PhantomJSDriverService.class.getName()).setLevel(Level.OFF);
+        String[] phantomArgs = new  String[] {
+                "--webdriver-loglevel=NONE"
+        };
+
         desiredCapabilities = new DesiredCapabilities();
         System.setProperty("phantomjs.binary.path",driverPath);
         //ssl证书支持
@@ -56,12 +61,13 @@ public class PhantomJSDriverManager {
         desiredCapabilities.setCapability("cssSelectorsEnabled", false);
         //js支持
         desiredCapabilities.setJavascriptEnabled(true);
-        desiredCapabilities.setCapability("phantomjs.page.settings.userAgent", new JHtml().User_Agent);
+        desiredCapabilities.setCapability("phantomjs.page.settings.userAgent", JHtml.User_Agent);
         desiredCapabilities.setCapability("phantomjs.page.settings.loadImages", false);
         desiredCapabilities.setCapability("phantomjs.page.settings.disk-cache", false);
         //驱动支持
         desiredCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY, driverPath);
-
+        //禁用大量的日志输出
+        desiredCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_CLI_ARGS, phantomArgs);
         pool = new ConcurrentHashMap<>();
         timer();
     }
@@ -205,7 +211,7 @@ public class PhantomJSDriverManager {
             desiredCapabilities.setCapability("cssSelectorsEnabled", false);
             //js支持
             desiredCapabilities.setJavascriptEnabled(true);
-            desiredCapabilities.setCapability("phantomjs.page.settings.userAgent", new JHtml().User_Agent);
+            desiredCapabilities.setCapability("phantomjs.page.settings.userAgent", JHtml.User_Agent);
             desiredCapabilities.setCapability("phantomjs.page.settings.loadImages", false);
             desiredCapabilities.setCapability("phantomjs.page.settings.disk-cache", false);
 

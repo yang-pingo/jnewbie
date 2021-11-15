@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+
 /**
  * @program: jnewbie
  * @description:  HtmlUnit连接池
@@ -33,6 +35,8 @@ public class HtmlUnitManager {
     }
 
     static {
+        java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(Level.OFF);
         pool = new ConcurrentHashMap<>();
         timer();
     }

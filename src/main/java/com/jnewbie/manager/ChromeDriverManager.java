@@ -3,7 +3,9 @@ package com.jnewbie.manager;
 import com.jnewbie.request.JProxy;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +46,7 @@ public class ChromeDriverManager {
     static {
         //禁用日志
         System.setProperty("webdriver.chrome.silentOutput", "true");
-        java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
+        java.util.logging.Logger.getLogger(ChromeDriverService.class.getName()).setLevel(Level.OFF);
         //驱动初始化
         System.setProperty("webdriver.chrome.driver", driverPath);
 

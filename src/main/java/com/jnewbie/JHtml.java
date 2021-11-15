@@ -42,7 +42,7 @@ import java.util.logging.Level;
 public class JHtml {
     private static final Logger log = LoggerFactory.getLogger(JHtml.class);
     public static HttpclientManager httpclientManager = new HttpclientManager();
-    public  String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
+    public static String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
     private String cookie;
     private JHeader jHeader;
     private com.jnewbie.request.JParam JParam;
