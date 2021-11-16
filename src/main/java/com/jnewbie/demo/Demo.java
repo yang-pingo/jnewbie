@@ -17,12 +17,10 @@ public class Demo {
             JHtml jHtml = new JHtml();
         //创建数据处理器
             DemoJProcessor demoJProcessor = new DemoJProcessor();
-//        JPage jPage = jHtml.get("https://www.biquge7.com/s?q=123");
-//        System.out.println(jPage);
 //        将客户端加入到处理器,设置开始url,设置启动线程
             demoJProcessor.setJHtml(jHtml)
                     .setGetMethod(JHtml.GET)
-                    .setUrl("https://www.biquge7.com/s?q=（风云同人）妖女婠婠")
+                    .setUrl("https://www.biquge7.com/s?q=斗破苍穹")
                     .start(5);
     }
 }

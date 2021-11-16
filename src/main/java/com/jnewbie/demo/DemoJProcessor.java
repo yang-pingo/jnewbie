@@ -31,7 +31,6 @@ public class DemoJProcessor  extends JProcessor {
             //获取书名
             String name = jPage.xpath("//h1/text()").get();
             //打印书名
-            System.out.println(name);
             //获取章节列表url,写个替换域名进去因为出来的url没有带域名/book/28659/
             List<String> urls = jPage.xpath("//div[@class='listmain']//dd/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把章节列表url,加入到爬取列表
