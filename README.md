@@ -24,7 +24,7 @@ maven导包
 <dependency>
     <groupId>io.github.yang-pingo</groupId>
     <artifactId>jnewbie</artifactId>
-    <version>1.6</version>
+    <version>1.7.1</version>
 </dependency>
 ```
 
