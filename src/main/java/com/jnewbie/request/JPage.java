@@ -1,12 +1,17 @@
 package com.jnewbie.request;
 
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.http.Header;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @program: jnewbie
@@ -21,7 +26,27 @@ public class JPage {
     private Integer code;
     private String url;
     private String redUrl;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Map<String,String> tag = new HashMap<>();
+
     private List<String> goUrl = new ArrayList<>();
+
+    public JPage setTag(String key,String value){
+        tag.put(key,value);
+        return  this;
+    }
+    public String getTag(String key){
+        String s = tag.get(key);
+        return s;
+    }
+    public Map<String,String> getTagAll(){
+        return tag;
+    }
+    public JPage setTagAll(Map<String,String> map){
+        tag = map;
+        return this;
+    }
 
     public void addGoUrl(String url){
         goUrl.add(url);
@@ -31,6 +56,9 @@ public class JPage {
     }
 
 
+    public JContent trim(){
+        return new JContent(content).trim();
+    }
     //使用xpath抽取页面信息
     public JContent xpath(String xptah){
             return new JContent(content).xpath(xptah);
@@ -65,6 +93,7 @@ public class JPage {
     public String toString(){
             return content;
         }
+
 
 }
 

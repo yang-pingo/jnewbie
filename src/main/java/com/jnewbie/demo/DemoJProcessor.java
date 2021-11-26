@@ -25,6 +25,8 @@ public class DemoJProcessor  extends JProcessor {
             List<String> urls = jPage.xpath("//h4[@class='bookname']/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把结果加入到爬取列表
             jPage.addGoUrls(urls);
+            jPage.setTag("url", jPage.getUrl());
+
         }
         //判断url是不是详情页面
         else  if(url.contains("book") && !url.contains("html")) {
@@ -35,6 +37,9 @@ public class DemoJProcessor  extends JProcessor {
             List<String> urls = jPage.xpath("//div[@class='listmain']//dd/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把章节列表url,加入到爬取列表
             jPage.addGoUrls(urls);
+            String url1 = jPage.getTag("url");
+            System.out.println(url1
+            );
 
         }
         //判断url是不是章节内容页面

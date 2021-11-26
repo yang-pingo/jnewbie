@@ -56,7 +56,7 @@ public class JContent {
         return this;
     }
 
-
+    //去空
     public JContent trim() {
         List<String> list = new ArrayList<>();
         try {

@@ -126,12 +126,12 @@ public abstract class JProcessor implements Runnable {
     private void goRun(JPage jPage)  {
         for (String url : jPage.getGoUrl()) {
             try {
-                Boolean i = false;
                 if(filter) {
                     synchronized (Bloomfilter) {
                         if (!Bloomfilter.mightContain(url)) {
                             Bloomfilter.put(url);
-                            i = true;
+                        }else {
+                            return;
                         }
                     }
                 }
@@ -142,25 +142,25 @@ public abstract class JProcessor implements Runnable {
                         log.error("爬取间隔错误");
                     }
                 }
-                if (i) {
-                    JPage j = null;
-                    switch (this.getMethod) {
-                        case 1:
-                            j = jHtml.get(url);
-                            break;
-                        case 2:
-                            j = jHtml.hGet(url);
-                            break;
-                        case 3:
-                            j = jHtml.pGet(url);
-                            break;
-                        case 4:
-                            j = jHtml.cGet(url);
-                            break;
-                    }
-                    JPage process = process(j);
-                    goRun(process);
+                JPage j = null;
+                switch (this.getMethod) {
+                    case 1:
+                        j = jHtml.get(url);
+                        break;
+                    case 2:
+                        j = jHtml.hGet(url);
+                        break;
+                    case 3:
+                        j = jHtml.pGet(url);
+                        break;
+                    case 4:
+                        j = jHtml.cGet(url);
+                        break;
                 }
+                j.setTagAll(jPage.getTagAll());
+                JPage process = process(j);
+                goRun(process);
+
             }catch (Exception e){
                 StackTraceElement stackTraceElement= e.getStackTrace()[0];
                 log.error("错误:"+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());

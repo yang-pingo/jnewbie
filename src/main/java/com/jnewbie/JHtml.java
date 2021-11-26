@@ -359,6 +359,7 @@ public class JHtml {
                 //等待背景js加载时间
                 if (jsTime != 0) {
                     webClient.waitForBackgroundJavaScript(jsTime);
+                    webClient.setJavaScriptTimeout(jsTime);
                 }
 
                 //获取请求
@@ -502,11 +503,14 @@ public class JHtml {
                     driver = worke.getDriver();
                 }
                 driver.manage().timeouts().pageLoadTimeout(timeOut, TimeUnit.MILLISECONDS);
-                driver.get(StringToUrl.to(url));
-                //等待
                 if (jsTime != 0) {
                     driver.manage().timeouts().implicitlyWait(jsTime, TimeUnit.MILLISECONDS);
+                    driver.manage().timeouts().setScriptTimeout(jsTime, TimeUnit.MILLISECONDS);
+                    Thread.sleep(jsTime);
                 }
+                driver.get(StringToUrl.to(url));
+                //等待
+
                 String pageSource = driver.getPageSource();
                 jPage.setContent(pageSource);
                 if (jPage.getContent().equals("<html><head></head><body></body></html>")) {
