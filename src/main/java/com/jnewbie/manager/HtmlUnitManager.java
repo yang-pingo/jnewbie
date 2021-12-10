@@ -126,7 +126,6 @@ public class HtmlUnitManager {
         private volatile int status;
 
         public Worker(){
-
             WebClient webClient = new WebClient(BrowserVersion.CHROME);
             //启用js，禁用css等
             webClient.getOptions().setThrowExceptionOnScriptError(false);

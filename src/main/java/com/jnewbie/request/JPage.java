@@ -26,33 +26,40 @@ public class JPage {
     private Integer code;
     private String url;
     private String redUrl;
+    private byte[] bytes;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private Map<String,String> tag = new HashMap<>();
+    private Map<String,Object> tag = new HashMap<>();
 
     private List<String> goUrl = new ArrayList<>();
 
-    public JPage setTag(String key,String value){
+    public JPage setTag(String key,Object value){
         tag.put(key,value);
         return  this;
     }
-    public String getTag(String key){
-        String s = tag.get(key);
+    public Object getTag(String key){
+        Object s = tag.get(key);
         return s;
     }
-    public Map<String,String> getTagAll(){
+    public Map<String,Object> getTagAll(){
         return tag;
     }
-    public JPage setTagAll(Map<String,String> map){
+    public JPage setTagAll(Map<String,Object> map){
         tag = map;
         return this;
     }
-
+    public Object delTag(String key){
+        return tag.remove(key);
+    }
     public void addGoUrl(String url){
         goUrl.add(url);
     }
     public void addGoUrls(List<String> urls){
         goUrl.addAll(urls);
+    }
+
+    public boolean delGoUrl(String url){
+        return goUrl.remove(url);
     }
 
 

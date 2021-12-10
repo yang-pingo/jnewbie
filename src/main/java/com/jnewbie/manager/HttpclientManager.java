@@ -6,6 +6,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -21,11 +22,10 @@ import java.security.NoSuchAlgorithmException;
  * @create: 2021-11-05 11:41
  **/
 public class HttpclientManager {
+    static CloseableHttpClient httpClient;
 
-    PoolingHttpClientConnectionManager cm = null;
-    
-    @PostConstruct
-    public void init() {
+    static PoolingHttpClientConnectionManager cm ;
+    static {
         LayeredConnectionSocketFactory sslsf = null;
         try {
             sslsf = new SSLConnectionSocketFactory(SSLContext.getDefault());
@@ -40,12 +40,15 @@ public class HttpclientManager {
         cm =new PoolingHttpClientConnectionManager(socketFactoryRegistry);
         cm.setMaxTotal(600);
         cm.setDefaultMaxPerRoute(200);
+        httpClient  = HttpClients.custom()
+                .setConnectionManager(cm)
+                .disableAutomaticRetries()
+                .build();
+//        return httpClient;
     }
 
-    public HttpClientBuilder getHttpClient() {
-        HttpClientBuilder httpClient = HttpClients.custom()
-                .setConnectionManager(cm)
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(2, false));
+    public static CloseableHttpClient getHttpClient() {
         return httpClient;
+
     }
 }

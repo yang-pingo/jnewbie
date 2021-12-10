@@ -23,6 +23,7 @@ public class StringToUrl {
                 .replace("%5E","^")
                .replace("+"," ")
                 .replace("%26","&")
+               .replace("&amp;","&")
                 .replace("%2F","/")
                .replace("%7B","{")
                .replace("%7D","}")

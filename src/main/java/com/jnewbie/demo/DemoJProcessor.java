@@ -37,7 +37,7 @@ public class DemoJProcessor  extends JProcessor {
             List<String> urls = jPage.xpath("//div[@class='listmain']//dd/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把章节列表url,加入到爬取列表
             jPage.addGoUrls(urls);
-            String url1 = jPage.getTag("url");
+            String url1 =(String) jPage.getTag("url");
             System.out.println(url1
             );
 

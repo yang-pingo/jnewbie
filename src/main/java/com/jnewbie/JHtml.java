@@ -9,6 +9,7 @@ import com.jnewbie.request.JHeader;
 import com.jnewbie.request.JPage;
 import com.jnewbie.request.JParam;
 import org.apache.http.*;
+import org.apache.http.auth.AUTH;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -16,14 +17,24 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.BufferedHttpEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -41,8 +52,7 @@ import java.util.logging.Level;
  **/
 public class JHtml {
     private static final Logger log = LoggerFactory.getLogger(JHtml.class);
-    public static HttpclientManager httpclientManager = new HttpclientManager();
-    public static String User_Agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.22 (KHTML, like Gecko) Chrome/25.0.1364.160 Safari/537.22";
+    public static String User_Agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
     private String cookie;
     private JHeader jHeader;
     private com.jnewbie.request.JParam JParam;
@@ -103,7 +113,7 @@ public class JHtml {
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
-            HttpClientBuilder httpclient = httpclientManager.getHttpClient();
+            CloseableHttpClient httpclient = HttpclientManager.getHttpClient();
             CloseableHttpResponse response = null;
             String responseBody = null;
             try {
@@ -125,17 +135,24 @@ public class JHtml {
                 RequestConfig.Builder builder = RequestConfig.custom()
                         .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
                         .setSocketTimeout(5000);
+
+                HttpClientContext context = HttpClientContext.create();
                 //如果没代理
                 if (JProxy != null) {
                     HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
                     builder.setProxy(proxyHost);
-
                     //包含账号密码的代理
                     if (JProxy.getUsername() != null && JProxy.getPassword() != null) {
+                        BasicAuthCache authCache = new BasicAuthCache();
+                        BasicScheme proxyAuth = new BasicScheme();
+                        proxyAuth.processChallenge(new BasicHeader(AUTH.PROXY_AUTH, "BASIC realm=default"));
+                        authCache.put(proxyHost, proxyAuth);
                         CredentialsProvider credsProvider = new BasicCredentialsProvider();
                         credsProvider.setCredentials(new AuthScope(JProxy.getHost(), JProxy.getPort()),
                                 new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
-                        httpclient.setDefaultCredentialsProvider(credsProvider);
+//                        httpclient.setDefaultCredentialsProvider(credsProvider);
+                        context.setAuthCache(authCache);
+                        context.setCredentialsProvider(credsProvider);
                     }
                 }
                 RequestConfig config = builder.build();
@@ -151,9 +168,12 @@ public class JHtml {
                     httpget.addHeader("cookie", cookie);
                 }
                 //发起请求
-                response = httpclient.build().execute(httpget);
+                response = httpclient.execute(httpget,context);
                 int status = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    entity = new BufferedHttpEntity(entity);
+                }
                 String location = null;
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
                     responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
@@ -165,12 +185,19 @@ public class JHtml {
                         responseBody = location;
                     }
                 }
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                entity.writeTo(bos);
+                byte[] bytes = bos.toByteArray();
+
                 //给jpage添加
                 jPage.setHeaders(response.getAllHeaders());
                 jPage.setContent(responseBody);
                 jPage.setCode(status);
+                jPage.setBytes(bytes);
                 //释放连接
                 entity.getContent().close();
+//                httpget.clone();
+                bos.close();
                 i=retry;
             } catch (Exception e) {
                 if (JProxy != null) {
@@ -178,6 +205,7 @@ public class JHtml {
                         log.error("代理服务器连接失败：" + e);
                     }
                 } else {
+                    e.printStackTrace();
                     StackTraceElement stackTraceElement = e.getStackTrace()[0];
                     log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                 }
@@ -191,6 +219,7 @@ public class JHtml {
             } finally {
                 if (response != null) {
                     try {
+
                         response.close();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -207,7 +236,7 @@ public class JHtml {
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
-            HttpClientBuilder httpclient = httpclientManager.getHttpClient();
+            CloseableHttpClient httpclient = HttpclientManager.getHttpClient();
             CloseableHttpResponse response = null;
             String responseBody = null;
             jPage.setUrl(url);
@@ -222,6 +251,9 @@ public class JHtml {
                 RequestConfig.Builder builder = RequestConfig.custom()
                         .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
                         .setSocketTimeout(5000);
+
+                HttpClientContext context = HttpClientContext.create();
+
                 //如果没代理
                 if (JProxy != null) {
                     HttpHost proxyHost = new HttpHost(JProxy.getHost(), JProxy.getPort());
@@ -229,10 +261,16 @@ public class JHtml {
 
                     //包含账号密码的代理
                     if (JProxy.getUsername() != null && JProxy.getPassword() != null) {
+                        BasicAuthCache authCache = new BasicAuthCache();
+                        BasicScheme proxyAuth = new BasicScheme();
+                        proxyAuth.processChallenge(new BasicHeader(AUTH.PROXY_AUTH, "BASIC realm=default"));
+                        authCache.put(proxyHost, proxyAuth);
                         CredentialsProvider credsProvider = new BasicCredentialsProvider();
                         credsProvider.setCredentials(new AuthScope(JProxy.getHost(), JProxy.getPort()),
-                                new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
-                        httpclient.setDefaultCredentialsProvider(credsProvider);
+                        new UsernamePasswordCredentials(JProxy.getUsername(), JProxy.getPassword()));
+//                        httpclient.setDefaultCredentialsProvider(credsProvider);
+                        context.setAuthCache(authCache);
+                        context.setCredentialsProvider(credsProvider);
                     }
                 }
                 RequestConfig config = builder.build();
@@ -249,10 +287,10 @@ public class JHtml {
                     httppost.addHeader("cookie", cookie);
                 }
                 //服务器返回数据处理
-                response = httpclient.build().execute(httppost);
+                response = httpclient.execute(httppost,context);
                 int status = response.getStatusLine().getStatusCode();
                 HttpEntity entity = response.getEntity();
-                String location = null;
+                String location = "";
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
                     responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
                 } else {
@@ -271,8 +309,6 @@ public class JHtml {
                 jPage.setContent(responseBody);
                 jPage.setCode(status);
                 jPage.setRedUrl(location);
-                //释放连接
-                entity.getContent().close();
                 i=retry;
             } catch (Exception e) {
                 if (e.toString().contains(JProxy.getHost())) {
@@ -291,7 +327,7 @@ public class JHtml {
             } finally {
                 if (response != null) {
                     try {
-                        response.close();
+                        EntityUtils.consume(response.getEntity());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -364,9 +400,7 @@ public class JHtml {
 
                 //获取请求
                 String pageAsXml = page.getWebResponse().getContentAsString();
-
                 WebResponse webResponse = page.getWebResponse();
-
                 int statusCode = webResponse.getStatusCode();
 
                 ArrayList<Header> list = new ArrayList<>();
@@ -545,5 +579,32 @@ public class JHtml {
         }
 
         return jPage;
+    }
+
+
+    public byte[] download(String url) throws IOException {
+        URL urll = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection)urll.openConnection();
+        //设置超时间为3秒
+        conn.setConnectTimeout(3*1000);
+        //防止屏蔽程序抓取而返回403错误
+        conn.setRequestProperty("User-Agent", User_Agent);
+        //得到输入流
+        InputStream inputStream = conn.getInputStream();
+        //获取自己数组
+        byte[] getData = readInputStream(inputStream);
+        
+        return getData;
+
+    }
+    private byte[] readInputStream(InputStream inputStream) throws IOException {
+        byte[] buffer = new byte[1024];
+        int len = 0;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        while((len = inputStream.read(buffer)) != -1) {
+            bos.write(buffer, 0, len);
+        }
+        bos.close();
+        return bos.toByteArray();
     }
 }

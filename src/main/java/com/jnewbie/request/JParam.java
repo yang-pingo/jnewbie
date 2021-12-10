@@ -29,7 +29,7 @@ public class JParam {
         return this;
     }
     public UrlEncodedFormEntity getUrlEncodedFormEntity() throws UnsupportedEncodingException {
-        return new UrlEncodedFormEntity(nameValuePairs);
+        return new UrlEncodedFormEntity(nameValuePairs,"utf-8");
     }
 
     public List<NameValuePair> getNameValuePairs(){

@@ -1,14 +1,18 @@
 package com.jnewbie;
 
+import com.google.common.base.Verify;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.jnewbie.request.JPage;
+import net.bytebuddy.asm.Advice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,8 +30,9 @@ public abstract class JProcessor implements Runnable {
     JHtml jHtml;
     List<String> urls = new ArrayList<>();
     String url;
-    JPage jPage;
+    volatile JPage jPage;
     //使用哪种get
+    volatile boolean is = true;
     Integer getMethod = 1;
     Integer interval = 100;
     boolean filter = true;
@@ -77,61 +82,59 @@ public abstract class JProcessor implements Runnable {
 
     @Override
     public void run() {
-        //检查是否是起步
-        JPage jPage = null;
-        if (this.jPage == null) {
-            switch (this.getMethod) {
-                case 1:
-                    jPage = jHtml.get(url);
-                    break;
-                case 2:
-                    jPage = jHtml.hGet(url);
-                    break;
-                case 3:
-                    jPage = jHtml.pGet(url);
-                    break;
-                case 4:
-                    jPage = jHtml.cGet(url);
-                    break;
+        if(is){
+        switch (this.getMethod) {
+            case 1:
+                jPage = jHtml.get(url);
+                break;
+            case 2:
+                jPage = jHtml.hGet(url);
+                break;
+            case 3:
+                jPage = jHtml.pGet(url);
+                break;
+            case 4:
+                jPage = jHtml.cGet(url);
+                break;
+        }
+        jPage = process(jPage);
+        is =false;
+        if (this.urls.size() != 0) {
+            jPage.addGoUrls(this.urls);
+            this.urls.clear();
+        }
+        if (T != 0) {
+            List<Future<?>> list = new ArrayList<>();
+            for (int z = 0; z < T; z++) {
+                Future<?> submit = executorService.submit(this,"");
+                list.add(submit);
             }
-            this.jPage = process(jPage);
-            if (this.urls.size() != 0) {
-                jPage.addGoUrls(this.urls);
-                this.urls.clear();
+            for (Future<?> future : list) {
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-            if (T != 0) {
-                List<Future<?>> list = new ArrayList<>();
-                for (int z = 0; z < T; z++) {
-                    Future<?> submit = executorService.submit(this);
-                    list.add(submit);
-                }
-                for (Future<?> future : list) {
-                    try {
-                        future.get();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
 
-
-
-                }else {
-                    goRun(this.jPage);
-                }
-        }else{
-            goRun(this.jPage);
+            }else {
+                goRun(jPage);
+            }
+        }else {
+            goRun(jPage);
         }
 
     }
     private void goRun(JPage jPage)  {
         for (String url : jPage.getGoUrl()) {
+
             try {
-                if(filter) {
+                if (filter) {
                     synchronized (Bloomfilter) {
                         if (!Bloomfilter.mightContain(url)) {
                             Bloomfilter.put(url);
-                        }else {
-                            return;
+                        } else {
+                            continue;
                         }
                     }
                 }
@@ -161,17 +164,18 @@ public abstract class JProcessor implements Runnable {
                 JPage process = process(j);
                 goRun(process);
 
-            }catch (Exception e){
-                StackTraceElement stackTraceElement= e.getStackTrace()[0];
-                log.error("错误:"+stackTraceElement.getFileName()+",方法:"+stackTraceElement.getMethodName()+"，行:"+stackTraceElement.getLineNumber()+"，错误信息："+e.toString());
+            } catch (Exception e) {
+                StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
             }
-            }
-        //线程结束时，将计时器减一
+        }
+
         }
 
 
     public void start(Integer i){
         this.T = i;
+        is = true;
         run();
     }
 }
