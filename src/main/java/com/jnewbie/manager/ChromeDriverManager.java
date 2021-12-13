@@ -25,7 +25,6 @@ public class ChromeDriverManager {
     private static int i = 0;  //运行数
     private static int statusSize = 0;//使用中的线程数
     private static String driverPath = "C:\\Users\\YRJ\\Desktop\\chromedriver_win32\\chromedriver.exe";   //driver路径
-
     public static void close(){
         for (Map.Entry<String, Worker> entry : pool.entrySet()) {
             Worker work = entry.getValue();
@@ -180,14 +179,22 @@ public class ChromeDriverManager {
 
         public Worker(){
             ChromeOptions options=new ChromeOptions();
+            options.addArguments("-no-sandbox");
+            options.addArguments("-disable-dev-shm-usage");
             options.addArguments("-headless");
+            options.addArguments("-disable-gpu");
+
             driver = new ChromeDriver(options);
             status = 0;
         }
 
         public Worker(JProxy jProxy){
             ChromeOptions options=new ChromeOptions();
+            options.addArguments("-no-sandbox");
+            options.addArguments("-disable-dev-shm-usage");
             options.addArguments("-headless");
+            options.addArguments("-disable-gpu");
+
             Proxy proxy = new Proxy();
             String proxyServer = jProxy.getHost()+":"+jProxy.getPort();
             proxy.setHttpProxy(proxyServer).setSslProxy(proxyServer);

@@ -29,9 +29,8 @@ public class JPage {
     private byte[] bytes;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private Map<String,Object> tag = new HashMap<>();
-
-    private List<String> goUrl = new ArrayList<>();
+    volatile Map<String,Object> tag = new HashMap<>();
+    volatile List<String> goUrl = new ArrayList<>();
 
     public JPage setTag(String key,Object value){
         tag.put(key,value);
