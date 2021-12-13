@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -51,6 +52,7 @@ import java.util.logging.Level;
  * @create: 2021-11-05 15:48
  **/
 public class JHtml {
+    private static boolean logz = true;
     private static final Logger log = LoggerFactory.getLogger(JHtml.class);
     public static String User_Agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
     private String cookie;
@@ -66,6 +68,12 @@ public class JHtml {
     public static Integer HGET = 2;
     public static Integer PGET = 3;
     public static Integer CGET = 4;
+
+
+    public JHtml setLog(Boolean b){
+        logz = b;
+        return  this;
+    }
 
     static{
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF);
@@ -109,7 +117,10 @@ public class JHtml {
     }
     //get请求页面
     public JPage get(String url) {
-        log.info("get : " + url);
+        url = url.trim();
+        if(logz) {
+            log.info("get : " + url);
+        }
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
@@ -134,7 +145,7 @@ public class JHtml {
                 //超时
                 RequestConfig.Builder builder = RequestConfig.custom()
                         .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
-                        .setSocketTimeout(5000);
+                        .setSocketTimeout((int) timeOut);
 
                 HttpClientContext context = HttpClientContext.create();
                 //如果没代理
@@ -199,9 +210,11 @@ public class JHtml {
 //                httpget.clone();
                 bos.close();
                 i=retry;
+            } catch (SocketTimeoutException e){
+                log.error(url + "请求超时");
             } catch (Exception e) {
                 if (JProxy != null) {
-                    if (e.toString().contains(JProxy.getHost())) {
+                    if (JProxy !=null &&e.toString().contains(JProxy.getHost())) {
                         log.error("代理服务器连接失败：" + e);
                     }
                 } else {
@@ -232,7 +245,10 @@ public class JHtml {
 
     //post请求页面
     public  JPage post(String url) {
-        log.info("post:"+url);
+        url = url.trim();
+        if(logz) {
+            log.info("post:" + url);
+        }
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
@@ -250,7 +266,7 @@ public class JHtml {
                 //超时
                 RequestConfig.Builder builder = RequestConfig.custom()
                         .setConnectTimeout((int) timeOut).setConnectionRequestTimeout(1000)
-                        .setSocketTimeout(5000);
+                        .setSocketTimeout((int) timeOut);
 
                 HttpClientContext context = HttpClientContext.create();
 
@@ -310,8 +326,13 @@ public class JHtml {
                 jPage.setCode(status);
                 jPage.setRedUrl(location);
                 i=retry;
-            } catch (Exception e) {
-                if (e.toString().contains(JProxy.getHost())) {
+            } catch (SocketTimeoutException e){
+                log.error(url + "请求超时");
+                log.error(url+"开始重试："+i);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                if (JProxy !=null &&e.toString().contains(JProxy.getHost())) {
                     log.error("代理服务器连接失败：" + e);
                 } else {
                     StackTraceElement stackTraceElement = e.getStackTrace()[0];
@@ -323,7 +344,7 @@ public class JHtml {
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
-                log.error(url+"开始重试："+i);
+
             } finally {
                 if (response != null) {
                     try {
@@ -341,7 +362,10 @@ public class JHtml {
 
     //使用HtmlUnit加载动态页面（复杂JS无法加载）
     public JPage hGet(String url) {
-        log.info("hGet : " + url);
+        url = url.trim();
+        if(logz) {
+            log.info("hGet : " + url);
+        }
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
@@ -412,9 +436,11 @@ public class JHtml {
                 jPage.setCode(statusCode);
                 jPage.setContent(pageAsXml);
                 i = retry;
+            } catch (SocketTimeoutException e){
+                log.error(url + "请求超时");
             } catch (Exception e) {
                 if (JProxy != null) {
-                    if (e.toString().contains(JProxy.getHost())) {
+                    if (JProxy !=null &&e.toString().contains(JProxy.getHost())) {
                         log.error("代理服务器连接失败：" + e);
                     }
                 } else {
@@ -442,7 +468,10 @@ public class JHtml {
 
 
     public JPage cGet(String url) {
-        log.info("cGet : " + url);
+        url = url.trim();
+        if(logz) {
+            log.info("cGet : " + url);
+        }
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
@@ -508,8 +537,10 @@ public class JHtml {
     }
 
     public JPage pGet(String url) {
-        log.info("pGet : " + url);
-
+        url = url.trim();
+        if(logz) {
+            log.info("pGet : " + url);
+        }
         int i = 0;
         JPage jPage = new JPage();
         while (i<retry) {
@@ -555,7 +586,9 @@ public class JHtml {
 
                 }
                 i=retry;
-            } catch (Exception e) {
+            } catch (SocketTimeoutException e){
+                log.error(url + "请求超时");
+            }catch (Exception e) {
                 jPage.setContent("");
                 if (e.toString().contains("连接失败")) {
                     log.error(e.toString());
@@ -583,17 +616,18 @@ public class JHtml {
 
 
     public byte[] download(String url) throws IOException {
+        url = url.trim();
         URL urll = new URL(url);
         HttpURLConnection conn = (HttpURLConnection)urll.openConnection();
         //设置超时间为3秒
-        conn.setConnectTimeout(3*1000);
+        conn.setConnectTimeout(5*1000);
         //防止屏蔽程序抓取而返回403错误
         conn.setRequestProperty("User-Agent", User_Agent);
         //得到输入流
         InputStream inputStream = conn.getInputStream();
         //获取自己数组
         byte[] getData = readInputStream(inputStream);
-        
+        inputStream.close();
         return getData;
 
     }
