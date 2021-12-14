@@ -97,7 +97,7 @@ public abstract class JProcessor implements Runnable {
         }
         jPage = process(jPage);
         is =false;
-        this.urls.addAll(jPage.getGoUrl());
+        urlsAdd(jPage.getGoUrl());
         if (T != 0) {
             List<Future<?>> list = new ArrayList<>();
             for (int z = 0; z < T; z++) {
@@ -127,78 +127,89 @@ public abstract class JProcessor implements Runnable {
 
     }
     private void goRun(JPage jPage)  {
+        int i = 0;
         int size = urls.size();
         JPage jj = jPage;
-        while(size > 0) {
-            String url = null;
-            System.out.println(Thread.currentThread().getName());
-                try {
-                    if(urls.size()!=0){
-                        url =urls.get(0);
-                    }else {
-                        int i= 0;
-                        while (urls.size() == 0 && i <10) {
-                            System.out.println(Thread.currentThread().getName());
-                            Thread.sleep(1000);
-                            i++;
-                            size = urls.size();
-                        }
-                        continue;
-                    }
-                    if (filter) {
-                        synchronized (Bloomfilter) {
-                            if (!Bloomfilter.mightContain(url)) {
-                                Bloomfilter.put(url);
-                                urls.remove(url);
+        while (i < 10) {
+            try {
+                while(size > 0) {
+                    String url = null;
+                    try {
+                        synchronized (this) {
+                            if (urls.size() != 0) {
+                                url = urls.remove(0);
                             } else {
-                                size = urls.size();
-                                if(urls.size()==0){
-                                    int i= 0;
-                                    while (urls.size() == 0 && i <10) {
-                                        System.out.println(Thread.currentThread().getName());
-                                        Thread.sleep(1000);
-                                        i++;
-                                        size = urls.size();
+                                int o = 0;
+                                while (urls.size() == 0 && o < 5) {
+                                    Thread.sleep(1000);
+                                    o++;
+                                    size = urls.size();
+                                }
+                                continue;
+                            }
+                        }
+                        if (filter) {
+                            synchronized (Bloomfilter) {
+                                if (!Bloomfilter.mightContain(url)) {
+                                    Bloomfilter.put(url);
+
+                                } else {
+                                    size = urls.size();
+                                    if(urls.size()==0){
+                                        int p = 0;
+                                        while (urls.size() == 0 && p <5) {
+                                            Thread.sleep(1000);
+                                            p++;
+                                            size = urls.size();
+                                        }
+                                        continue;
                                     }
                                     continue;
                                 }
-                            continue;
+                            }
+                        }else{
+                            urls.remove(url);
+                        }
+                        if (interval != null) {
+                            try {
+                                Thread.sleep(interval);
+                            } catch (Exception e) {
+                                log.error("爬取间隔错误");
                             }
                         }
-                    }
-                    if (interval != null) {
-                        try {
-                            Thread.sleep(interval);
-                        } catch (Exception e) {
-                            log.error("爬取间隔错误");
+                        JPage j = null;
+                        switch (this.getMethod) {
+                            case 1:
+                                j = jHtml.get(url);
+                                break;
+                            case 2:
+                                j = jHtml.hGet(url);
+                                break;
+                            case 3:
+                                j = jHtml.pGet(url);
+                                break;
+                            case 4:
+                                j = jHtml.cGet(url);
+                                break;
                         }
-                    }
-                    JPage j = null;
-                    switch (this.getMethod) {
-                        case 1:
-                            j = jHtml.get(url);
-                            break;
-                        case 2:
-                            j = jHtml.hGet(url);
-                            break;
-                        case 3:
-                            j = jHtml.pGet(url);
-                            break;
-                        case 4:
-                            j = jHtml.cGet(url);
-                            break;
-                    }
-                    j.setTagAll(jj.getTagAll());
-                    jj = process(j);
-                    urlsAdd(jj.getGoUrl());
-                    size = urls.size();
-//                    goRun(process);
+                        j.setTagAll(jj.getTagAll());
+                        jj = process(j);
+                        urlsAdd(jj.getGoUrl());
+                        size = urls.size();
+                        i= 0;
 
-                } catch (Exception e) {
-                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
-                    log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                    } catch (Exception e) {
+                        StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                        log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                    }
                 }
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
             }
+            i++;
+            size = urls.size();
+        }
+
         }
 
 

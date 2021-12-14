@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,6 +17,9 @@ import java.util.List;
  * @create: 2021-11-08 11:33
  **/
 public class DemoJProcessor  extends JProcessor {
+
+    private List<String> urls;
+
     @Override
     public JPage process(JPage jPage) {
         String url = jPage.getUrl();
@@ -34,12 +38,15 @@ public class DemoJProcessor  extends JProcessor {
             String name = jPage.xpath("//h1/text()").get();
             //打印书名
             //获取章节列表url,写个替换域名进去因为出来的url没有带域名/book/28659/
-            List<String> urls = jPage.xpath("//div[@class='listmain']//dd/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
+            List<String>  urls = jPage.xpath("//div[@class='listmain']//dd/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把章节列表url,加入到爬取列表
-            jPage.addGoUrls(urls);
-            String url1 =(String) jPage.getTag("url");
-            System.out.println(url1
-            );
+            List<String>  urlsz = new ArrayList<>();
+            for (String s : urls) {
+                if(!s.trim().equals("javascript:dd_show()")) {
+                    urlsz.add(s);
+                }
+            }
+            jPage.addGoUrls(urlsz);
 
         }
         //判断url是不是章节内容页面
