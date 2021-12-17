@@ -1,10 +1,13 @@
 package com.jnewbie.demo;
 import com.jnewbie.JHtml;
+import com.jnewbie.StringToUrl;
 import com.jnewbie.request.JContent;
 import com.jnewbie.request.JPage;
+import net.sf.saxon.lib.SaxonOutputKeys;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.UUID;
 
 /**
  * @program: jnewbie
@@ -14,7 +17,7 @@ import java.util.Iterator;
  **/
 public class Demo {
     public static void main(String[] args) {
-//      创建请求客户端
+        //创建请求客户端
         JHtml jHtml = new JHtml();
         DemoJProcessor demoJProcessor = new DemoJProcessor();
         //将客户端加入到处理器,设置开始url,设置启动线程
@@ -22,7 +25,8 @@ public class Demo {
                 .setGetMethod(JHtml.GET)
                 .setUrl("https://www.bige7.com/s?q=斗破苍穹")
                 .start(10);
+
     }
-    }
+}
 
 

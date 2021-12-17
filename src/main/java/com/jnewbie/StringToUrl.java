@@ -18,7 +18,7 @@ public class StringToUrl {
     }
 
 
-    public static String re(String s){
+    private static String re(String s){
        return  s.replace("%25","%")
                 .replace("%5E","^")
                .replace("+"," ")

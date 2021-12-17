@@ -127,10 +127,15 @@ public abstract class JProcessor implements Runnable {
 
     }
     private void goRun(JPage jPage)  {
+
+        int w = 10;
         int i = 0;
         int size = urls.size();
         JPage jj = jPage;
-        while (i < 10) {
+        if(T == 0){
+            w = 1;
+        }
+        while (i < w) {
             try {
                 while(size > 0) {
                     String url = null;
@@ -140,7 +145,7 @@ public abstract class JProcessor implements Runnable {
                                 url = urls.remove(0);
                             } else {
                                 int o = 0;
-                                while (urls.size() == 0 && o < 5) {
+                                while (urls.size() == 0 && o < 5 && T !=0) {
                                     Thread.sleep(1000);
                                     o++;
                                     size = urls.size();
@@ -157,7 +162,7 @@ public abstract class JProcessor implements Runnable {
                                     size = urls.size();
                                     if(urls.size()==0){
                                         int p = 0;
-                                        while (urls.size() == 0 && p <5) {
+                                        while (urls.size() == 0 && p <5&& T !=0) {
                                             Thread.sleep(1000);
                                             p++;
                                             size = urls.size();
@@ -203,7 +208,9 @@ public abstract class JProcessor implements Runnable {
                         log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                     }
                 }
-                Thread.sleep(3000);
+                if(T != 0){
+                    Thread.sleep(3000);
+                }
             } catch (InterruptedException e) {
             }
             i++;

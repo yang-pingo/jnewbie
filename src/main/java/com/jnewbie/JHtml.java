@@ -187,7 +187,7 @@ public class JHtml {
                 }
                 String location = null;
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                    responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
+                    responseBody = entity != null ? EntityUtils.toString(entity, "GBK") : "";
                 } else {
                     // 从头中取出转向的地址
                     Header locationHeader = httpget.getLastHeader("location");
@@ -212,6 +212,8 @@ public class JHtml {
                 i=retry;
             } catch (SocketTimeoutException e){
                 log.error(url + "请求超时");
+                i++;
+                log.error(url+"开始重试："+i);
             } catch (Exception e) {
                 if (JProxy != null) {
                     if (JProxy !=null &&e.toString().contains(JProxy.getHost())) {
@@ -222,17 +224,16 @@ public class JHtml {
                     StackTraceElement stackTraceElement = e.getStackTrace()[0];
                     log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                 }
-                i++;
                 try {
                     Thread.sleep(retryTime);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
+                i++;
                 log.error(url+"开始重试："+i);
             } finally {
                 if (response != null) {
                     try {
-
                         response.close();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -327,6 +328,7 @@ public class JHtml {
                 jPage.setRedUrl(location);
                 i=retry;
             } catch (SocketTimeoutException e){
+                i++;
                 log.error(url + "请求超时");
                 log.error(url+"开始重试："+i);
             }
@@ -344,7 +346,8 @@ public class JHtml {
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
-
+                i++;
+                log.error(url+"开始重试："+i);
             } finally {
                 if (response != null) {
                     try {
@@ -438,6 +441,8 @@ public class JHtml {
                 i = retry;
             } catch (SocketTimeoutException e){
                 log.error(url + "请求超时");
+                i++;
+                log.error(url+"开始重试："+i);
             } catch (Exception e) {
                 if (JProxy != null) {
                     if (JProxy !=null &&e.toString().contains(JProxy.getHost())) {
@@ -447,12 +452,12 @@ public class JHtml {
                     StackTraceElement stackTraceElement = e.getStackTrace()[0];
                     log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                 }
-                i++;
                 try {
                     Thread.sleep(retryTime);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
+                i++;
                 log.error(url+"开始重试："+i);
             } finally {
                 //放回连接池
@@ -517,12 +522,12 @@ public class JHtml {
                     log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
 
                 }
-                i++;
                 try {
                     Thread.sleep(retryTime);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
+                i++;
                 log.error(url+"开始重试："+i);
             } finally {
                 //放回连接池
@@ -588,6 +593,8 @@ public class JHtml {
                 i=retry;
             } catch (SocketTimeoutException e){
                 log.error(url + "请求超时");
+                i++;
+                log.error(url+"开始重试："+i);
             }catch (Exception e) {
                 jPage.setContent("");
                 if (e.toString().contains("连接失败")) {
@@ -596,12 +603,12 @@ public class JHtml {
                     StackTraceElement stackTraceElement = e.getStackTrace()[0];
                     log.error(url + "获取html阶段错误：" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
                 }
-                i++;
                 try {
                     Thread.sleep(retryTime);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
                 }
+                i++;
                 log.error(url+"开始重试："+i);
             } finally {
                 //放回连接池
