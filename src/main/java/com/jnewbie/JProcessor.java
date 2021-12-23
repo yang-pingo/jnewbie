@@ -32,7 +32,7 @@ public abstract class JProcessor implements Runnable {
     //使用哪种get
     volatile boolean is = true;
     Integer getMethod = 1;
-    Integer interval = 1000;
+    Integer interval = 0;
     boolean filter = true;
     private static final Logger log = LoggerFactory.getLogger(JProcessor.class);
     public JProcessor(){}
@@ -40,6 +40,9 @@ public abstract class JProcessor implements Runnable {
 
     private  static BloomFilter<String> Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), 10000000,0.001);
 
+    public static void initializeFilter(){
+        Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), 10000000,0.001);
+    }
     public static void setBloomfilter(Integer size,float erro) {
         Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), size,erro);
     }
@@ -51,6 +54,10 @@ public abstract class JProcessor implements Runnable {
     public JProcessor setUrl(String url) {
         this.url=url;
         return this;
+    }
+
+    public List<String> getUrls() {
+        return urls;
     }
     public JProcessor setFilter(Boolean filter) {
         this.filter=filter;
@@ -175,7 +182,7 @@ public abstract class JProcessor implements Runnable {
                         }else{
                             urls.remove(url);
                         }
-                        if (interval != null) {
+                        if (interval != 0) {
                             try {
                                 Thread.sleep(interval);
                             } catch (Exception e) {
@@ -209,7 +216,7 @@ public abstract class JProcessor implements Runnable {
                     }
                 }
                 if(T != 0){
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 }
             } catch (InterruptedException e) {
             }

@@ -44,7 +44,6 @@ public class HttpclientManager {
                 .setConnectionManager(cm)
                 .disableAutomaticRetries()
                 .build();
-//        return httpClient;
     }
 
     public static CloseableHttpClient getHttpClient() {

@@ -53,6 +53,7 @@ import java.util.logging.Level;
  **/
 public class JHtml {
     private static boolean logz = true;
+    private String encoding = "UTF-8";
     private static final Logger log = LoggerFactory.getLogger(JHtml.class);
     public static String User_Agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";
     private String cookie;
@@ -80,7 +81,6 @@ public class JHtml {
         java.util.logging.Logger.getLogger("org.apache.http.client").setLevel(Level.OFF);
     }
 
-
     public JHtml(){}
     public JHtml setCookie (String cookie){
        this.cookie = cookie;
@@ -98,7 +98,10 @@ public class JHtml {
         this.jHeader = jHeader;
         return this;
     }
-
+public JHtml setEncoding (String encoding){
+        this.encoding = encoding;
+        return this;
+}
     public JHtml setJsTime (long jsTime){
         this.jsTime = jsTime;
         return this;
@@ -187,7 +190,7 @@ public class JHtml {
                 }
                 String location = null;
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                    responseBody = entity != null ? EntityUtils.toString(entity, "GBK") : "";
+                    responseBody = entity != null ? EntityUtils.toString(entity, encoding) : "";
                 } else {
                     // 从头中取出转向的地址
                     Header locationHeader = httpget.getLastHeader("location");
@@ -248,7 +251,7 @@ public class JHtml {
     public  JPage post(String url) {
         url = url.trim();
         if(logz) {
-            log.info("post:" + url);
+            log.info("post : " + url);
         }
         int i = 0;
         JPage jPage = new JPage();
@@ -309,7 +312,7 @@ public class JHtml {
                 HttpEntity entity = response.getEntity();
                 String location = "";
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                    responseBody = entity != null ? EntityUtils.toString(entity, "UTF-8") : "";
+                    responseBody = entity != null ? EntityUtils.toString(entity, encoding) : "";
                 } else {
                     // 从头中取出转向的地址
                     Header locationHeader = httppost.getLastHeader("location");

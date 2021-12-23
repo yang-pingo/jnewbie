@@ -5,6 +5,7 @@ import com.jnewbie.request.JContent;
 import com.jnewbie.request.JPage;
 import net.sf.saxon.lib.SaxonOutputKeys;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
@@ -16,7 +17,7 @@ import java.util.UUID;
  * @create: 2021-11-08 11:20
  **/
 public class Demo {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnsupportedEncodingException {
         //创建请求客户端
         JHtml jHtml = new JHtml();
         DemoJProcessor demoJProcessor = new DemoJProcessor();

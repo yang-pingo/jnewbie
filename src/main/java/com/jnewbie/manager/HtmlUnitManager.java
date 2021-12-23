@@ -20,7 +20,7 @@ public class HtmlUnitManager {
 
     private static ConcurrentHashMap<String,Worker> pool ;//线程池
     private static int coreSize = 2;//核心线程池，一直驻留的资源
-    private static int maxSize = 30;//设置最大数量资源，用于解决瞬时并发，瞬时并发过后要去识别空闲的释放掉，保留coreSize的资源
+    private static int maxSize = 60;//设置最大数量资源，用于解决瞬时并发，瞬时并发过后要去识别空闲的释放掉，保留coreSize的资源
     private static int count = 0;//当前线程数
     private static int i = 0;  //运行数
     private static int statusSize = 0;//使用中的线程数
