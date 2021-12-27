@@ -1,14 +1,10 @@
 package com.jnewbie.demo;
 import com.jnewbie.JHtml;
 import com.jnewbie.StringToUrl;
-import com.jnewbie.request.JContent;
 import com.jnewbie.request.JPage;
-import net.sf.saxon.lib.SaxonOutputKeys;
+import jdk.nashorn.api.scripting.ScriptUtils;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.UUID;
 
 /**
  * @program: jnewbie
@@ -24,7 +20,7 @@ public class Demo {
         //将客户端加入到处理器,设置开始url,设置启动线程
         demoJProcessor.setJHtml(jHtml)
                 .setGetMethod(JHtml.GET)
-                .setUrl("https://www.bige7.com/s?q=斗破苍穹")
+                .setUrl("https://www.biquge7.com/s?q=古代的舒心日子")
                 .start(10);
 
     }

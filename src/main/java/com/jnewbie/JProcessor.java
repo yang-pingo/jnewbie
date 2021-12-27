@@ -24,19 +24,21 @@ import java.util.concurrent.Future;
  **/
 public abstract class JProcessor implements Runnable {
     public static final ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final Logger log = LoggerFactory.getLogger(JProcessor.class);
+    volatile List<String> urls = new ArrayList<>();
+    volatile JPage jPage;
+    volatile boolean is = true;
+    boolean filter = true;
+    //使用哪种get
+    Integer getMethod = 1;
+    //线程数
     Integer T = 0;
     JHtml jHtml;
-    volatile List<String> urls = new ArrayList<>();
     String url;
-    volatile JPage jPage;
-    //使用哪种get
-    volatile boolean is = true;
-    Integer getMethod = 1;
     Integer interval = 0;
-    boolean filter = true;
-    private static final Logger log = LoggerFactory.getLogger(JProcessor.class);
-    public JProcessor(){}
+    volatile Integer taskNum = 0;
 
+    public JProcessor(){}
 
     private  static BloomFilter<String> Bloomfilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), 10000000,0.001);
 
@@ -134,7 +136,6 @@ public abstract class JProcessor implements Runnable {
 
     }
     private void goRun(JPage jPage)  {
-
         int w = 10;
         int i = 0;
         int size = urls.size();
@@ -182,6 +183,7 @@ public abstract class JProcessor implements Runnable {
                         }else{
                             urls.remove(url);
                         }
+                        taskNum++;
                         if (interval != 0) {
                             try {
                                 Thread.sleep(interval);
@@ -213,10 +215,15 @@ public abstract class JProcessor implements Runnable {
                     } catch (Exception e) {
                         StackTraceElement stackTraceElement = e.getStackTrace()[0];
                         log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                    }finally {
+                        taskNum--;
                     }
                 }
                 if(T != 0){
                     Thread.sleep(1000);
+                    if(urls.size() == 0 && taskNum == 0){
+                        break;
+                    }
                 }
             } catch (InterruptedException e) {
             }

@@ -190,7 +190,7 @@ public JHtml setEncoding (String encoding){
                 }
                 String location = null;
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                    responseBody = entity != null ? EntityUtils.toString(entity, encoding) : "";
+                    responseBody = entity != null ? EntityUtils.toString(entity, (!encoding.equalsIgnoreCase("unicode")) ? encoding : "UTF-8" ) : "";
                 } else {
                     // 从头中取出转向的地址
                     Header locationHeader = httpget.getLastHeader("location");
@@ -205,6 +205,8 @@ public JHtml setEncoding (String encoding){
 
                 //给jpage添加
                 jPage.setHeaders(response.getAllHeaders());
+                if(encoding.equalsIgnoreCase("unicode"))
+                    responseBody = StringToUrl.convertUnicode(responseBody);
                 jPage.setContent(responseBody);
                 jPage.setCode(status);
                 jPage.setBytes(bytes);
@@ -312,7 +314,7 @@ public JHtml setEncoding (String encoding){
                 HttpEntity entity = response.getEntity();
                 String location = "";
                 if (!(status == HttpStatus.SC_MOVED_PERMANENTLY) || !(status == HttpStatus.SC_MOVED_TEMPORARILY)) {
-                    responseBody = entity != null ? EntityUtils.toString(entity, encoding) : "";
+                    responseBody = entity != null ? EntityUtils.toString(entity, (!encoding.equalsIgnoreCase("unicode")) ? encoding : "UTF-8" ) : "";
                 } else {
                     // 从头中取出转向的地址
                     Header locationHeader = httppost.getLastHeader("location");
@@ -326,6 +328,8 @@ public JHtml setEncoding (String encoding){
 
                 //给jpage添加
                 jPage.setHeaders(response.getAllHeaders());
+                if(encoding.equalsIgnoreCase("unicode"))
+                    responseBody = StringToUrl.convertUnicode(responseBody);
                 jPage.setContent(responseBody);
                 jPage.setCode(status);
                 jPage.setRedUrl(location);
@@ -440,6 +444,8 @@ public JHtml setEncoding (String encoding){
 
                 jPage.setHeaders(list.toArray(new Header[]{}));
                 jPage.setCode(statusCode);
+                if(encoding.equalsIgnoreCase("unicode"))
+                    pageAsXml = StringToUrl.convertUnicode(pageAsXml);
                 jPage.setContent(pageAsXml);
                 i = retry;
             } catch (SocketTimeoutException e){
@@ -515,6 +521,8 @@ public JHtml setEncoding (String encoding){
                 }
 
                 String pageSource = driver.getPageSource();
+                if(encoding.equalsIgnoreCase("unicode"))
+                    pageSource = StringToUrl.convertUnicode(pageSource);
                 jPage.setContent(pageSource);
                 i=retry;
             } catch (Exception e) {
@@ -585,6 +593,8 @@ public JHtml setEncoding (String encoding){
                 //等待
 
                 String pageSource = driver.getPageSource();
+                if(encoding.equalsIgnoreCase("unicode"))
+                    pageSource = StringToUrl.convertUnicode(pageSource);
                 jPage.setContent(pageSource);
                 if (jPage.getContent().equals("<html><head></head><body></body></html>")) {
                     if (JProxy != null) {

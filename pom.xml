@@ -9,7 +9,7 @@
     <name>jnewbie</name>
     <description>最最最简单java爬虫框架！</description>
     <url>https://github.com/yang-pingo/jnewbie</url>
-    <version>1.7.4</version>
+    <version>1.7.5</version>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
