@@ -211,8 +211,7 @@ public JHtml setEncoding (String encoding){
                 jPage.setCode(status);
                 jPage.setBytes(bytes);
                 //释放连接
-                entity.getContent().close();
-//                httpget.clone();
+                httpget.clone();
                 bos.close();
                 i=retry;
             } catch (SocketTimeoutException e){
@@ -239,7 +238,7 @@ public JHtml setEncoding (String encoding){
             } finally {
                 if (response != null) {
                     try {
-                        response.close();
+                        EntityUtils.consume(response.getEntity());
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -334,6 +333,8 @@ public JHtml setEncoding (String encoding){
                 jPage.setCode(status);
                 jPage.setRedUrl(location);
                 i=retry;
+
+                httppost.clone();
             } catch (SocketTimeoutException e){
                 i++;
                 log.error(url + "请求超时");

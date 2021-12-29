@@ -38,8 +38,8 @@ public class HttpclientManager {
                 .register("http", new PlainConnectionSocketFactory())
                 .build();
         cm =new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-        cm.setMaxTotal(600);
-        cm.setDefaultMaxPerRoute(200);
+        cm.setMaxTotal(1000);
+        cm.setDefaultMaxPerRoute(1000);
         httpClient  = HttpClients.custom()
                 .setConnectionManager(cm)
                 .disableAutomaticRetries()

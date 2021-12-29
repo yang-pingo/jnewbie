@@ -5,6 +5,9 @@ import com.jnewbie.request.JPage;
 import jdk.nashorn.api.scripting.ScriptUtils;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Random;
 
 /**
  * @program: jnewbie
@@ -18,10 +21,16 @@ public class Demo {
         JHtml jHtml = new JHtml();
         DemoJProcessor demoJProcessor = new DemoJProcessor();
         //将客户端加入到处理器,设置开始url,设置启动线程
+        long startTime = System.currentTimeMillis();    //获取开始时间
+
         demoJProcessor.setJHtml(jHtml)
                 .setGetMethod(JHtml.GET)
                 .setUrl("https://www.biquge7.com/s?q=古代的舒心日子")
                 .start(10);
+
+        long endTime = System.currentTimeMillis();    //获取结束时间
+
+        System.out.println("程序运行时间：" + (endTime - startTime) + "ms");    //输出程序运行时间
 
     }
 }

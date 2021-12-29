@@ -1,6 +1,7 @@
 package com.jnewbie;
 
 import com.google.common.base.Verify;
+import com.google.common.collect.Sets;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.jnewbie.request.JPage;
@@ -36,7 +37,7 @@ public abstract class JProcessor implements Runnable {
     JHtml jHtml;
     String url;
     Integer interval = 0;
-    volatile Integer taskNum = 0;
+    Set<String> taskNum = Collections.synchronizedSet(new HashSet<>());
 
     public JProcessor(){}
 
@@ -136,102 +137,78 @@ public abstract class JProcessor implements Runnable {
 
     }
     private void goRun(JPage jPage)  {
-        int w = 10;
-        int i = 0;
-        int size = urls.size();
         JPage jj = jPage;
-        if(T == 0){
-            w = 1;
-        }
-        while (i < w) {
-            try {
-                while(size > 0) {
-                    String url = null;
-                    try {
-                        synchronized (this) {
-                            if (urls.size() != 0) {
-                                url = urls.remove(0);
-                            } else {
-                                int o = 0;
-                                while (urls.size() == 0 && o < 5 && T !=0) {
-                                    Thread.sleep(1000);
-                                    o++;
-                                    size = urls.size();
-                                }
-                                continue;
-                            }
+        Random r = new Random(1);
+        do{
+            while (urls.size() > 0) {
+                boolean i = false;
+                String url = null;
+                try {
+                    taskNum.add(Thread.currentThread().getName());
+                    synchronized (this) {
+                        if (urls.size() != 0) {
+                            url = urls.remove(0);
+                        } else {
+                            i = true;
                         }
+                    }
+                    if (!i) {
                         if (filter) {
                             synchronized (Bloomfilter) {
                                 if (!Bloomfilter.mightContain(url)) {
                                     Bloomfilter.put(url);
-
                                 } else {
-                                    size = urls.size();
-                                    if(urls.size()==0){
-                                        int p = 0;
-                                        while (urls.size() == 0 && p <5&& T !=0) {
-                                            Thread.sleep(1000);
-                                            p++;
-                                            size = urls.size();
-                                        }
-                                        continue;
-                                    }
-                                    continue;
+                                    i = true;
                                 }
                             }
-                        }else{
-                            urls.remove(url);
                         }
-                        taskNum++;
-                        if (interval != 0) {
-                            try {
-                                Thread.sleep(interval);
-                            } catch (Exception e) {
-                                log.error("爬取间隔错误");
+                        if (!i) {
+                            if (interval != 0) {
+                                try {
+                                    Thread.sleep(interval);
+                                } catch (Exception e) {
+                                    log.error("爬取间隔错误");
+                                }
                             }
+                            JPage j = null;
+                            switch (this.getMethod) {
+                                case 1:
+                                    j = jHtml.get(url);
+                                    break;
+                                case 2:
+                                    j = jHtml.hGet(url);
+                                    break;
+                                case 3:
+                                    j = jHtml.pGet(url);
+                                    break;
+                                case 4:
+                                    j = jHtml.cGet(url);
+                                    break;
+                            }
+                            j.setTagAll(jj.getTagAll());
+                            jj = process(j);
+                            urlsAdd(jj.getGoUrl());
                         }
-                        JPage j = null;
-                        switch (this.getMethod) {
-                            case 1:
-                                j = jHtml.get(url);
-                                break;
-                            case 2:
-                                j = jHtml.hGet(url);
-                                break;
-                            case 3:
-                                j = jHtml.pGet(url);
-                                break;
-                            case 4:
-                                j = jHtml.cGet(url);
-                                break;
-                        }
-                        j.setTagAll(jj.getTagAll());
-                        jj = process(j);
-                        urlsAdd(jj.getGoUrl());
-                        size = urls.size();
-                        i= 0;
-
-                    } catch (Exception e) {
-                        StackTraceElement stackTraceElement = e.getStackTrace()[0];
-                        log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
-                    }finally {
-                        taskNum--;
                     }
+                } catch (Exception e) {
+                    StackTraceElement stackTraceElement = e.getStackTrace()[0];
+                    log.error("错误:" + stackTraceElement.getFileName() + ",方法:" + stackTraceElement.getMethodName() + "，行:" + stackTraceElement.getLineNumber() + "，错误信息：" + e.toString());
+                }finally {
+                    taskNum.remove(Thread.currentThread().getName());
                 }
-                if(T != 0){
-                    Thread.sleep(1000);
-                    if(urls.size() == 0 && taskNum == 0){
-                        break;
-                    }
-                }
-            } catch (InterruptedException e) {
             }
-            i++;
-            size = urls.size();
+            int ran1 = r.nextInt(2000);
+//            System.out.println(taskNum.size()+Thread.currentThread().getName());
+            try {
+                Thread.sleep(ran1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+        while (taskNum.size() > 0);
+    }
 
-        }
+
 
 
 
