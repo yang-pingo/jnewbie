@@ -115,11 +115,7 @@ public abstract class JProcessor implements Runnable {
                 list.add(submit);
             }
             for (Future<?> future : list) {
-                try {
-                    future.get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                    while (!future.isDone());
             }
 
             }else {

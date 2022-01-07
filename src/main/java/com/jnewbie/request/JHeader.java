@@ -3,6 +3,7 @@ package com.jnewbie.request;
 
 
 import lombok.Data;
+import net.bytebuddy.implementation.bind.annotation.This;
 import org.apache.http.NameValuePair;
 
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ public class JHeader  implements NameValuePair {
     public JHeader() {}
 
     public JHeader(String name, String value) {
+        this.name = name;
+        this.value = value;
     }
 
     public void add(String name, String value){

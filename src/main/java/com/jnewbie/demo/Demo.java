@@ -1,13 +1,18 @@
 package com.jnewbie.demo;
+import com.alibaba.fastjson.JSONObject;
 import com.jnewbie.JHtml;
 import com.jnewbie.StringToUrl;
+import com.jnewbie.request.JHeader;
 import com.jnewbie.request.JPage;
 import jdk.nashorn.api.scripting.ScriptUtils;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @program: jnewbie
@@ -27,12 +32,19 @@ public class Demo {
                 .setGetMethod(JHtml.GET)
                 .setUrl("https://www.biquge7.com/s?q=古代的舒心日子")
                 .start(10);
-
+        demoJProcessor.setJHtml(jHtml)
+                .setGetMethod(JHtml.GET)
+                .setUrl("https://www.biquge7.com/s?q=古代的舒心日子")
+                .start(10);
         long endTime = System.currentTimeMillis();    //获取结束时间
 
         System.out.println("程序运行时间：" + (endTime - startTime) + "ms");    //输出程序运行时间
 
     }
+
 }
+
+
+
 
 
