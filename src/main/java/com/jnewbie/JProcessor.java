@@ -62,6 +62,12 @@ public abstract class JProcessor implements Runnable {
     public List<String> getUrls() {
         return urls;
     }
+    public void setUrls(List<String> ruls) {
+        this.urls = ruls;
+    }
+    public void UrlsClear() {
+        urls.clear();
+    }
     public JProcessor setFilter(Boolean filter) {
         this.filter=filter;
         return this;
@@ -136,7 +142,7 @@ public abstract class JProcessor implements Runnable {
         JPage jj = jPage;
         Random r = new Random(1);
         do{
-            while (urls.size() > 0) {
+            while (urls.size() > 0 && !Thread.currentThread().isInterrupted()) {
                 boolean i = false;
                 String url = null;
                 try {
@@ -194,14 +200,14 @@ public abstract class JProcessor implements Runnable {
                 }
             }
             int ran1 = r.nextInt(2000);
-//            System.out.println(taskNum.size()+Thread.currentThread().getName());
             try {
-                Thread.sleep(ran1);
+                if(!Thread.currentThread().isInterrupted())
+                    Thread.sleep(ran1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        while (taskNum.size() > 0);
+        while (taskNum.size() > 0 && !Thread.currentThread().isInterrupted());
     }
 
 
