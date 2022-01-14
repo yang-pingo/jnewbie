@@ -8,10 +8,7 @@ import org.apache.http.Header;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @program: jnewbie
@@ -30,21 +27,41 @@ public class JPage {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     volatile Map<String,Object> tag = new HashMap<>();
-    volatile List<String> goUrl = new ArrayList<>();
+    volatile List<Object> list =  Collections.synchronizedList(new ArrayList<Object>());
+    volatile List<String> goUrl = Collections.synchronizedList(new ArrayList<String>());
 
-    public JPage setTag(String key,Object value){
+    public JPage addTag(String key,Object value){
         tag.put(key,value);
         return  this;
     }
+    public Boolean containsTag(String key){
+        Set<String> strings = tag.keySet();
+        return  strings.contains(key);
+    }
     public Object getTag(String key){
-        Object s = tag.get(key);
-        return s;
+        return tag.get(key);
     }
     public Map<String,Object> getTagAll(){
         return tag;
     }
     public JPage setTagAll(Map<String,Object> map){
         tag = map;
+        return this;
+    }
+    public Boolean addList(Object value){
+        return  list.add(value);
+    }
+    public Boolean containsList(Object key){
+        return  list.contains(key);
+    }
+    public Object getList(Integer key){
+        return list.get(key);
+    }
+    public List<Object> getListAll(){
+        return list;
+    }
+    public JPage setListAll(List<Object> list){
+        this.list = list;
         return this;
     }
     public Object delTag(String key){
