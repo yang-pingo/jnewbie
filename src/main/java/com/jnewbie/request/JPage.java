@@ -44,7 +44,7 @@ public class JPage {
     public Map<String,Object> getTagAll(){
         return tag;
     }
-    public JPage addTagAll(Map<String,Object> map){
+    public JPage setTagAll(Map<String,Object> map){
         tag = map;
         return this;
     }
