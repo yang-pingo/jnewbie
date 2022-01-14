@@ -29,7 +29,7 @@ public class DemoJProcessor  extends JProcessor {
             List<String> urls = jPage.xpath("//h4[@class='bookname']/a/@href").replaceFirst("/","https://www.biquge7.com/").getAll();
             //把结果加入到爬取列表
             jPage.addGoUrls(urls);
-            jPage.setTag("url", jPage.getUrl());
+            jPage.addTag("url", jPage.getUrl());
 
         }
         //判断url是不是详情页面

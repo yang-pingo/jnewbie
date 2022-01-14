@@ -187,7 +187,7 @@ public abstract class JProcessor implements Runnable {
                                     j = jHtml.cGet(url);
                                     break;
                             }
-                            j.setTagAll(jj.getTagAll());
+                            j.addTagAll(jj.getTagAll());
                             j.setListAll(jj.getListAll());
                             jj = process(j);
                             urlsAdd(jj.getGoUrl());
